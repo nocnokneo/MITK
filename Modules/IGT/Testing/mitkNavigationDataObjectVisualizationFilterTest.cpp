@@ -271,7 +271,9 @@ int mitkNavigationDataObjectVisualizationFilterTest(int /* argc */, char* /*argv
   mitk::FillVector3D(updatedPos2, 4.3, 5.2, 6.0);
   mitk::FillVector3D(zero, 0.0, 0.0, 0.0);
   mitk::NavigationData::OrientationType updatedOri1(0.7, 0.5, 0.1, 0.4);
+  updatedOri1.normalize();
   mitk::NavigationData::OrientationType updatedOri2(0.2, 0.7, 0.6, 0.1);
+  updatedOri2.normalize();
   nd1->SetPosition(updatedPos1);
   nd1->SetOrientation(updatedOri1);
   nd2->SetPosition(updatedPos2);

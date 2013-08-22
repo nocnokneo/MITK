@@ -11,7 +11,7 @@
 
 mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mitk::NavigationDataToNavigationDataFilter(),
   m_Renderer(NULL),
-  m_SliceOrientation(SLICE_ORTHO),
+  m_ViewDirection(Axial),
   m_TrackingVolume(NULL),
   m_JustExceededTrackingVolume(true),
   m_FirstUpdate(true),
@@ -24,6 +24,10 @@ mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mit
   m_DirectionOfProjection[0] = 0;
   m_DirectionOfProjection[1] = 0;
   m_DirectionOfProjection[2] = -1;
+
+  m_WorldUpVector[0] = 0.0;
+  m_WorldUpVector[1] = 1.0;
+  m_WorldUpVector[2] = 0.0;
 
   m_LastUserSelectedSliceAxes[0][0] = 1.0;
   m_LastUserSelectedSliceAxes[0][1] = 0.0;
@@ -83,31 +87,53 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
 
     NavigationData::OrientationType orientation = this->GetInput()->GetOrientation();
 
-    vnl_vector<ScalarType> transformedTipOffsetVnl = orientation.rotate(m_TipOffset.GetVnlVector());
     Vector3D transformedTipOffset;
-    transformedTipOffset.SetVnlVector(transformedTipOffsetVnl);
+    transformedTipOffset.SetVnlVector(orientation.rotate(m_TipOffset.GetVnlVector()));
 
-    if (SLICE_ORTHO == m_SliceOrientation)
+    slicePosition += transformedTipOffset;
+
+    mitk::SliceNavigationController::Pointer snc = m_Renderer->GetSliceNavigationController();
+
+    if (Axial == m_ViewDirection)
     {
-      m_Renderer->GetSliceNavigationController()->SelectSliceByPoint(slicePosition + transformedTipOffset);
+      snc->SetViewDirection(mitk::SliceNavigationController::Axial);
+      snc->SelectSliceByPoint(slicePosition);
     }
-    else if (SLICE_NORMAL_TO_TOOL_TIP == m_SliceOrientation)
+    else if (Sagittal == m_ViewDirection)
     {
-      vnl_vector<ScalarType> directionOfProjectionVnl = orientation.rotate(m_DirectionOfProjection.GetVnlVector());
-      Vector3D directionOfProjection;
-      directionOfProjection.SetVnlVector(directionOfProjectionVnl);
+      snc->SetViewDirection(mitk::SliceNavigationController::Sagittal);
+      snc->SelectSliceByPoint(slicePosition);
+    }
+    else if (Frontal == m_ViewDirection)
+    {
+      snc->SetViewDirection(mitk::SliceNavigationController::Frontal);
+      snc->SelectSliceByPoint(slicePosition);
+    }
+    else if (Oblique == m_ViewDirection)
+    {
+      Vector3D slicingPlaneNormalVector;
+      slicingPlaneNormalVector.SetVnlVector(orientation.rotate(m_DirectionOfProjection.GetVnlVector()));
 
-      // plane_z X user_x -> plane_y
-      Vector3D normalPlaneYAxis = itk::CrossProduct(directionOfProjection, m_LastUserSelectedSliceAxes[0]);
-      // plane_y X plane_z -> plane_x
-      Vector3D normalPlaneXAxis = itk::CrossProduct(normalPlaneYAxis, directionOfProjection);
+      mitk::PlaneGeometry::Pointer slicingPlane = mitk::PlaneGeometry::New();
+      slicingPlane->InitializePlane(slicePosition, slicingPlaneNormalVector);
 
-      m_Renderer->GetSliceNavigationController()->ReorientSlices(slicePosition + transformedTipOffset,
-                                                                 normalPlaneXAxis, normalPlaneYAxis);
+      // Project the world y-axis onto the cutting plane to define the up
+      // vector of the reoriented slices
+      mitk::Vector3D slicingPlaneUpVector; // *normalized*
+      if ( slicingPlane->Project(m_WorldUpVector, slicingPlaneUpVector) )
+      {
+        // slicingPlaneUpVector CROSS slicingPlaneNormalVector -> slicingPlaneRightVector
+        Vector3D slicingPlaneRightVector = itk::CrossProduct(slicingPlaneUpVector,
+                                                             slicingPlaneNormalVector);
+
+        m_Renderer->GetSliceNavigationController()->ReorientSlices(slicePosition,
+                                                                   slicingPlaneRightVector,
+                                                                   slicingPlaneUpVector);
+      }
     }
     else
     {
-      MITK_ERROR << "Unsupported SliceOrientation: " << m_SliceOrientation;
+      MITK_ERROR << "Unsupported ViewDirection: " << m_ViewDirection;
     }
 
     m_Renderer->RequestUpdate();
@@ -172,14 +198,14 @@ mitk::NavigationDataSliceVisualization::SetEllipseTrackingVolume(
 }
 
 void
-mitk::NavigationDataSliceVisualization::SetBoxTrackingVolumeVolume(Point3D origin, double size)
+mitk::NavigationDataSliceVisualization::SetBoxTrackingVolume(Point3D origin, double size)
 {
   double uniformSize[3] = {size, size, size};
-  this->SetBoxTrackingVolumeVolume(origin, uniformSize);
+  this->SetBoxTrackingVolume(origin, uniformSize);
 }
 
 void
-mitk::NavigationDataSliceVisualization::SetBoxTrackingVolumeVolume(Point3D origin, double size[3])
+mitk::NavigationDataSliceVisualization::SetBoxTrackingVolume(Point3D origin, double size[3])
 {
   typedef itk::BoxSpatialObject<3> BoxSpatialObjectType;
   BoxSpatialObjectType::Pointer box = BoxSpatialObjectType::New();

@@ -24,19 +24,21 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     mitkClassMacro(NavigationDataSliceVisualization, NavigationDataToNavigationDataFilter)
     itkNewMacro(Self)
 
-    typedef enum
+    enum ViewDirection
     {
       /**
        * Tracked slice planes are NOT re-oriented, only the position
        * of the slice plane is controlled by the input navigation data.
        */
-      SLICE_ORTHO,
+      Axial = 0,
+      Sagittal,
+      Frontal,
       /**
-       * Tracked slice planes are re-oriented to be normal to the
-       * direction of the tool tip.
+       * Tracked slice planes are re-oriented to an orietation defined
+       * relative to the orientation of the tool tip.
        */
-      SLICE_NORMAL_TO_TOOL_TIP
-    } SliceOrientationType;
+      Oblique
+    };
 
     typedef itk::SpatialObject<3> SpatialObjectType;
 
@@ -62,9 +64,10 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     itkGetConstMacro(TipOffset,Vector3D)
 
     /**
-     * \brief Set/get the direction of the projection used in
-     * SLICE_NORMAL_TO_TOOL_TIP tracking mode. It is defined in tool tip
-     * coordinates.
+     * \brief Set/get the direction of the projection (only for ViewDirection == Oblique)
+     *
+     * This vector is defined in tool tip coordinates and defines the normal
+     * vector of the slice cutting plane.
      *
      * Default is [0,0,-1].
      */
@@ -72,12 +75,24 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     itkGetConstMacro(DirectionOfProjection, Vector3D)
 
     /**
+     * \brief Set/get the world up vector used to define the y-axis of the
+     * cutting plane (only for ViewDirection == Oblique)
+     *
+     * This vector, define in world coordinates, is projected onto the cutting
+     * plane to define the orientation of slices.
+     *
+     * Default is [0,1,0].
+     */
+    itkSetMacro(WorldUpVector, Vector3D)
+    itkGetConstMacro(WorldUpVector, Vector3D)
+
+    /**
      * \brief Set/get the orientation of the sliced plane
      *
-     * Default is SLICE_ORTHO.
+     * Default is Axial.
      */
-    itkSetMacro(SliceOrientation,SliceOrientationType)
-    itkGetConstMacro(SliceOrientation,SliceOrientationType)
+    itkSetEnumMacro(ViewDirection,ViewDirection)
+    itkGetEnumMacro(ViewDirection,ViewDirection)
 
     /**
      * \brief Set/get the tracking volume
@@ -102,8 +117,8 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     /**
      * \brief Convenience methods for setting a box shaped tracking volume
      */
-    void SetBoxTrackingVolumeVolume(Point3D origin, double size);
-    void SetBoxTrackingVolumeVolume(Point3D origin, double size[3]);
+    void SetBoxTrackingVolume(Point3D origin, double size);
+    void SetBoxTrackingVolume(Point3D origin, double size[3]);
 
   protected:
     NavigationDataSliceVisualization();
@@ -129,7 +144,8 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     BaseRenderer::Pointer m_Renderer;
     Vector3D m_TipOffset;
     Vector3D m_DirectionOfProjection;
-    SliceOrientationType m_SliceOrientation;
+    Vector3D m_WorldUpVector;
+    ViewDirection m_ViewDirection;
     SpatialObjectType::Pointer m_TrackingVolume;
     bool m_JustExceededTrackingVolume;
     bool m_FirstUpdate;

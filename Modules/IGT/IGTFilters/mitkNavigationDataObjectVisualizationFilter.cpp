@@ -17,6 +17,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDataStorage.h"
 
+#include <itkVersor.h>
 
 mitk::NavigationDataObjectVisualizationFilter::NavigationDataObjectVisualizationFilter()
 : NavigationDataToNavigationDataFilter(),
@@ -107,26 +108,19 @@ void mitk::NavigationDataObjectVisualizationFilter::GenerateData()
     float scale[] = {1.0, 1.0, 1.0};
     data->GetGeometry()->SetSpacing(scale);
 
-    /*now bring quaternion to affineTransform by using vnl_Quaternion*/
     affineTransform->SetIdentity();
 
 
     if (this->GetTransformOrientation(index) == true)
     {
-      //calculate the transform from the quaternions
-      static itk::QuaternionRigidTransform<double>::Pointer quatTransform = itk::QuaternionRigidTransform<double>::New();
-
+      // Calculate the 3x3 rotation matrix from the rotation quaternion
+      // Because of a bug in ITK, this calculation must be done using double
+      // precision (otherwise the ITK orthogonality check fails)
       mitk::NavigationData::OrientationType orientation = nd->GetOrientation();
-      // convert mitk::ScalarType quaternion to double quaternion because of itk bug
-      vnl_quaternion<double> doubleQuaternion(orientation.x(), orientation.y(), orientation.z(), orientation.r());
-      quatTransform->SetIdentity();
-      quatTransform->SetRotation(doubleQuaternion);
-      quatTransform->Modified();
-
-      /* because of an itk bug, the transform can not be calculated with float data type.
-      To use it in the mitk geometry classes, it has to be transfered to mitk::ScalarType which is float */
-      static AffineTransform3D::MatrixType m;
-      mitk::TransferMatrix(quatTransform->GetMatrix(), m);
+      itk::Versor<double> versorOrientationD;
+      versorOrientationD.Set(orientation.x(), orientation.y(), orientation.z(), orientation.r());
+      AffineTransform3D::MatrixType m;
+      mitk::TransferMatrix(versorOrientationD.GetMatrix(), m);
       affineTransform->SetMatrix(m);
     }
     if (this->GetTransformPosition(index) == true)
@@ -136,7 +130,6 @@ void mitk::NavigationDataObjectVisualizationFilter::GenerateData()
       pos.Set_vnl_vector(nd->GetPosition().Get_vnl_vector());
       affineTransform->SetOffset(pos);
     }
-    affineTransform->Modified();
     //set the transform to data
     data->GetGeometry()->SetIndexToWorldTransform(affineTransform);
     //set the original spacing to keep scaling of the geometrical object
@@ -144,7 +137,6 @@ void mitk::NavigationDataObjectVisualizationFilter::GenerateData()
     data->GetGeometry()->TransferItkToVtkTransform(); // update VTK Transform for rendering too
     data->GetGeometry()->Modified();
     data->Modified();
-    output->SetDataValid(true); // operation was successful, therefore data of output is valid.
   }
 }
 

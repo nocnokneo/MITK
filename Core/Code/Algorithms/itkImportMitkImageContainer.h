@@ -18,6 +18,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #define __itkImportMitkImageContainer_h
 
 #include <itkImportImageContainer.h>
+#include <itkCudaImportImageContainer.h>
 #include <mitkImageDataItem.h>
 #include <mitkImageWriteAccessor.h>
 
@@ -39,7 +40,7 @@ namespace itk
  */
 
 template <typename TElementIdentifier, typename TElement>
-class ImportMitkImageContainer:  public ImportImageContainer<TElementIdentifier, TElement>
+class ImportMitkImageContainer:  public CudaImportImageContainer<TElementIdentifier, TElement>
 {
 public:
   /** Standard class typedefs. */

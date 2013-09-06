@@ -67,8 +67,8 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
     output->Graft(input); // First, copy all information from input to output
   }
 
-  // Nothing left to do if data is not valid
-  if (!this->GetInput()->IsDataValid())
+  // Nothing left to do if we don't have an input with valid data
+  if (numberOfInputs == 0 || !this->GetInput()->IsDataValid())
     return;
 
   // get position from NavigationData to move the slice to this position

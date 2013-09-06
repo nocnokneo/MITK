@@ -126,9 +126,7 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
         Vector3D slicingPlaneRightVector = itk::CrossProduct(slicingPlaneUpVector,
                                                              slicingPlaneNormalVector);
 
-        m_Renderer->GetSliceNavigationController()->ReorientSlices(slicePosition,
-                                                                   slicingPlaneRightVector,
-                                                                   slicingPlaneUpVector);
+        snc->ReorientSlices(slicePosition, slicingPlaneRightVector, slicingPlaneUpVector);
       }
     }
     else

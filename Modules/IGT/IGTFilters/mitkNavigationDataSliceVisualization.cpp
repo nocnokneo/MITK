@@ -38,6 +38,22 @@ mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mit
   m_LastUserSelectedSliceAxes[1][2] = 0.0;
 }
 
+void mitk::NavigationDataSliceVisualization::SetDirectionOfProjection(Vector3D direction)
+{
+  if (Equal(direction.GetNorm(), 0.0))
+  {
+    MITK_WARN << "Ignoring invalid direction of projection: " << direction;
+    return;
+  }
+
+  if (m_DirectionOfProjection != direction)
+  {
+    m_DirectionOfProjection = direction;
+    this->SetViewDirection(Oblique);
+    this->Modified();
+  }
+}
+
 void mitk::NavigationDataSliceVisualization::GenerateData()
 {
   // check if renderer was set

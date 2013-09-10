@@ -71,7 +71,7 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
      *
      * Default is [0,0,-1].
      */
-    itkSetMacro(DirectionOfProjection, Vector3D)
+    virtual void SetDirectionOfProjection(Vector3D direction);
     itkGetConstMacro(DirectionOfProjection, Vector3D)
 
     /**

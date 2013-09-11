@@ -208,6 +208,8 @@ int mitk::VtkPropRenderer::Render(mitk::VtkPropRenderer::RenderType type)
 
   }
 
+  this->UpdateOverlays();
+
   if (lastVtkBased == false)
     Disable2DOpenGL();
 
@@ -546,6 +548,12 @@ void mitk::VtkPropRenderer::PickWorldPoint(const mitk::Point2D& displayPoint, mi
        */
         m_PointPicker->Pick(displayPoint[0], displayPoint[1], 0, m_VtkRenderer);
         vtk2itk(m_PointPicker->GetPickPosition(), worldPoint);
+        break;
+      }
+    case(CellPicking) :
+      {
+        m_CellPicker->Pick(displayPoint[0], displayPoint[1], 0, m_VtkRenderer);
+        vtk2itk(m_CellPicker->GetPickPosition(), worldPoint);
         break;
       }
     }

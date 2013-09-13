@@ -38,6 +38,22 @@ mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mit
   m_LastUserSelectedSliceAxes[1][2] = 0.0;
 }
 
+void mitk::NavigationDataSliceVisualization::SetDirectionOfProjection(Vector3D direction)
+{
+  if (Equal(direction.GetNorm(), 0.0))
+  {
+    MITK_WARN << "Ignoring invalid direction of projection: " << direction;
+    return;
+  }
+
+  if (m_DirectionOfProjection != direction)
+  {
+    m_DirectionOfProjection = direction;
+    this->SetViewDirection(Oblique);
+    this->Modified();
+  }
+}
+
 void mitk::NavigationDataSliceVisualization::GenerateData()
 {
   // check if renderer was set
@@ -54,6 +70,10 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
 
   /* update outputs with tracking data from tools */
   unsigned int numberOfInputs = this->GetNumberOfInputs();
+  if (numberOfInputs == 0)
+  {
+    return;
+  }
   for (unsigned int i = 0; i < numberOfInputs ; ++i)
   {
     NavigationData* output = this->GetOutput(i);
@@ -67,8 +87,8 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
     output->Graft(input); // First, copy all information from input to output
   }
 
-  // Nothing left to do if data is not valid
-  if (!this->GetInput()->IsDataValid())
+  // Nothing left to do if we don't have an input with valid data
+  if (numberOfInputs == 0 || !this->GetInput()->IsDataValid())
     return;
 
   // get position from NavigationData to move the slice to this position
@@ -126,9 +146,7 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
         Vector3D slicingPlaneRightVector = itk::CrossProduct(slicingPlaneUpVector,
                                                              slicingPlaneNormalVector);
 
-        m_Renderer->GetSliceNavigationController()->ReorientSlices(slicePosition,
-                                                                   slicingPlaneRightVector,
-                                                                   slicingPlaneUpVector);
+        snc->ReorientSlices(slicePosition, slicingPlaneRightVector, slicingPlaneUpVector);
       }
     }
     else

@@ -70,6 +70,10 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
 
   /* update outputs with tracking data from tools */
   unsigned int numberOfInputs = this->GetNumberOfInputs();
+  if (numberOfInputs == 0)
+  {
+    return;
+  }
   for (unsigned int i = 0; i < numberOfInputs ; ++i)
   {
     NavigationData* output = this->GetOutput(i);

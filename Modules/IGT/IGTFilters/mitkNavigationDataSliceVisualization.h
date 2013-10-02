@@ -34,8 +34,17 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
       Sagittal,
       Frontal,
       /**
-       * Tracked slice planes are re-oriented to an orietation defined
-       * relative to the orientation of the tool tip.
+       * Axial plane "tilted" about the lateral vector so that it is coplanar
+       * with the tool trajectory
+       */
+      AxialOblique,
+      /**
+       * Sagittal plane "tilted" about the axial vector so that it is coplanar
+       * with the tool trajectory
+       */
+      SagittalOblique,
+      /**
+       * Slice plane normal to the tool trajectory
        */
       Oblique
     };
@@ -64,15 +73,14 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
     itkGetConstMacro(TipOffset,Vector3D)
 
     /**
-     * \brief Set/get the direction of the projection (only for ViewDirection == Oblique)
+     * \brief Set/get the tool trajectory used to control oblique slices
      *
-     * This vector is defined in tool tip coordinates and defines the normal
-     * vector of the slice cutting plane.
+     * This vector is defined in tool tip coordinates.
      *
      * Default is [0,0,-1].
      */
-    virtual void SetDirectionOfProjection(Vector3D direction);
-    itkGetConstMacro(DirectionOfProjection, Vector3D)
+    virtual void SetToolTrajectory(Vector3D direction);
+    itkGetConstMacro(ToolTrajectory, Vector3D)
 
     /**
      * \brief Set/get the world up vector used to define the y-axis of the
@@ -143,7 +151,7 @@ class MitkIGT_EXPORT NavigationDataSliceVisualization : public NavigationDataToN
 
     BaseRenderer::Pointer m_Renderer;
     Vector3D m_TipOffset;
-    Vector3D m_DirectionOfProjection;
+    Vector3D m_ToolTrajectory;
     Vector3D m_WorldUpVector;
     ViewDirection m_ViewDirection;
     SpatialObjectType::Pointer m_TrackingVolume;

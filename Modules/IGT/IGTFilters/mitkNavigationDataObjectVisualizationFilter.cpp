@@ -21,7 +21,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 mitk::NavigationDataObjectVisualizationFilter::NavigationDataObjectVisualizationFilter()
 : NavigationDataToNavigationDataFilter(),
-m_RepresentationList(), m_TransformPosition(), m_TransformOrientation()
+m_RepresentationList(), m_TransformPosition(), m_TransformOrientation(), m_RotationMode(RotationStandard)
 {
 }
 
@@ -29,6 +29,7 @@ m_RepresentationList(), m_TransformPosition(), m_TransformOrientation()
 mitk::NavigationDataObjectVisualizationFilter::~NavigationDataObjectVisualizationFilter()
 {
   m_RepresentationList.clear();
+  m_OffsetList.clear();
 }
 
 
@@ -48,6 +49,14 @@ const mitk::BaseData* mitk::NavigationDataObjectVisualizationFilter::GetRepresen
   return NULL;
 }
 
+mitk::AffineTransform3D::Pointer mitk::NavigationDataObjectVisualizationFilter::GetOffset(int index)
+{
+  OffsetPointerMap::const_iterator iter = m_OffsetList.find(index);
+  if (iter != m_OffsetList.end())
+    return iter->second;
+  return NULL;
+}
+
 
 void mitk::NavigationDataObjectVisualizationFilter::SetRepresentationObject(unsigned int idx, BaseData* data)
 {
@@ -63,6 +72,17 @@ void mitk::NavigationDataObjectVisualizationFilter::SetRepresentationObject(unsi
   //std::pair<RepresentationPointerMap::iterator, bool> returnEl; //pair for returning the result
   //returnEl = m_RepresentationList.insert( RepresentationPointerMap::value_type(nd, data) ); //insert the given elements
   //return returnEl.second; // return if insert was successful
+}
+
+void mitk::NavigationDataObjectVisualizationFilter::SetOffset(int index, mitk::AffineTransform3D::Pointer offset)
+{
+m_OffsetList[index] = offset;
+}
+
+
+void mitk::NavigationDataObjectVisualizationFilter::SetRotationMode(RotationMode r)
+{
+  m_RotationMode = r;
 }
 
 
@@ -149,7 +169,7 @@ void mitk::NavigationDataObjectVisualizationFilter::SetTransformPosition( unsign
     return;
 
   this->m_TransformPosition[index] = applyTransform;
-  this->Modified(); \
+  this->Modified();
 }
 
 

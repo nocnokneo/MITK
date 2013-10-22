@@ -21,9 +21,9 @@ mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mit
   m_TipOffset[1] = 0.0f;
   m_TipOffset[2] = 0.0f;
 
-  m_DirectionOfProjection[0] = 0;
-  m_DirectionOfProjection[1] = 0;
-  m_DirectionOfProjection[2] = -1;
+  m_ToolTrajectory[0] = 0;
+  m_ToolTrajectory[1] = 0;
+  m_ToolTrajectory[2] = -1;
 
   m_WorldUpVector[0] = 0.0;
   m_WorldUpVector[1] = 1.0;
@@ -36,6 +36,22 @@ mitk::NavigationDataSliceVisualization::NavigationDataSliceVisualization() : mit
   m_LastUserSelectedSliceAxes[1][0] = 0.0;
   m_LastUserSelectedSliceAxes[1][1] = 1.0;
   m_LastUserSelectedSliceAxes[1][2] = 0.0;
+}
+
+void mitk::NavigationDataSliceVisualization::SetToolTrajectory(Vector3D direction)
+{
+  if (Equal(direction.GetNorm(), 0.0))
+  {
+    MITK_WARN << "Ignoring invalid direction of projection: " << direction;
+    return;
+  }
+
+  if (m_ToolTrajectory != direction)
+  {
+    m_ToolTrajectory = direction;
+    this->SetViewDirection(Oblique);
+    this->Modified();
+  }
 }
 
 void mitk::NavigationDataSliceVisualization::GenerateData()
@@ -54,6 +70,10 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
 
   /* update outputs with tracking data from tools */
   unsigned int numberOfInputs = this->GetNumberOfInputs();
+  if (numberOfInputs == 0)
+  {
+    return;
+  }
   for (unsigned int i = 0; i < numberOfInputs ; ++i)
   {
     NavigationData* output = this->GetOutput(i);
@@ -109,10 +129,42 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
       snc->SetViewDirection(mitk::SliceNavigationController::Frontal);
       snc->SelectSliceByPoint(slicePosition);
     }
+    else if (AxialOblique == m_ViewDirection)
+    {
+      // Rotate the tool trajectory vector into world coordinate frame (assuming
+      // NavigationData has passed through a NavigationDataTransformFilter to
+      // convert it into world coordinate frame)
+      Vector3D toolTrajectory;
+      toolTrajectory.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
+
+      // Project the tool trajectory onto the sagittal plane. This defines the
+      // y-axis ("up") of the axial oblique slicing plane
+      toolTrajectory[0] = 0.0;
+
+      Vector3D slicingPlaneXAxisVector;
+      FillVector3D(slicingPlaneXAxisVector, 1.0, 0.0, 0.0);
+      snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, toolTrajectory);
+    }
+    else if (SagittalOblique == m_ViewDirection)
+    {
+       // Rotate the tool trajectory vector into world coordinate frame (assuming
+       // NavigationData has passed through a NavigationDataTransformFilter to
+       // convert it into world coordinate frame)
+       Vector3D toolTrajectory;
+       toolTrajectory.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
+
+       // Project the tool trajectory onto the axial plane. This defines the
+       // y-axis ("up") of the sagittal oblique slicing plane
+       toolTrajectory[2] = 0.0;
+
+       Vector3D slicingPlaneXAxisVector;
+       FillVector3D(slicingPlaneXAxisVector, 0.0, 0.0, 1.0);
+       snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, toolTrajectory);
+    }
     else if (Oblique == m_ViewDirection)
     {
       Vector3D slicingPlaneNormalVector;
-      slicingPlaneNormalVector.SetVnlVector(orientation.rotate(m_DirectionOfProjection.GetVnlVector()));
+      slicingPlaneNormalVector.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
 
       mitk::PlaneGeometry::Pointer slicingPlane = mitk::PlaneGeometry::New();
       slicingPlane->InitializePlane(slicePosition, slicingPlaneNormalVector);

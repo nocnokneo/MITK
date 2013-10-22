@@ -26,6 +26,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <QInputDialog>
 #include <QClipboard>
 
+#include <qwt_plot_picker.h>
 
 #include <mitkTractAnalyzer.h>
 #include <mitkTbssImporter.h>
@@ -204,7 +205,7 @@ void QmitkTractbasedSpatialStatisticsView::InitPointsets()
     m_P1->SetData( m_PointSetNode );
     m_P1->SetProperty( "name", mitk::StringProperty::New( "PointSet" ) );
     m_P1->SetProperty( "opacity", mitk::FloatProperty::New( 1 ) );
-    m_P1->SetProperty( "helper object", mitk::BoolProperty::New(true) ); // CHANGE if wanted
+    m_P1->SetProperty( "helper object", mitk::BoolProperty::New(false) ); // CHANGE if wanted
     m_P1->SetProperty( "pointsize", mitk::FloatProperty::New( 0.1 ) );
     m_P1->SetColor( 1.0, 0.0, 0.0 );
     this->GetDefaultDataStorage()->Add(m_P1);
@@ -252,8 +253,8 @@ void QmitkTractbasedSpatialStatisticsView::CreateConnections()
     connect( (QObject*)(m_Controls->m_AddGroup), SIGNAL(clicked()), this, SLOT(AddGroup()) );
     connect( (QObject*)(m_Controls->m_RemoveGroup), SIGNAL(clicked()), this, SLOT(RemoveGroup()) );
     connect( (QObject*)(m_Controls->m_Clipboard), SIGNAL(clicked()), this, SLOT(CopyToClipboard()) );
-    connect( m_Controls->m_RoiPlotWidget->m_PlotPicker, SIGNAL(selected(const QwtDoublePoint&)), SLOT(Clicked(const QwtDoublePoint&) ) );
-    connect( m_Controls->m_RoiPlotWidget->m_PlotPicker, SIGNAL(moved(const QwtDoublePoint&)), SLOT(Clicked(const QwtDoublePoint&) ) );
+    connect( m_Controls->m_RoiPlotWidget->m_PlotPicker, SIGNAL(selected(const QPointF&)), SLOT(Clicked(const QPointF&) ) );
+    connect( m_Controls->m_RoiPlotWidget->m_PlotPicker, SIGNAL(moved(const QPointF&)), SLOT(Clicked(const QPointF&) ) );
     connect( (QObject*)(m_Controls->m_Cut), SIGNAL(clicked()), this, SLOT(Cut()) );
     connect( (QObject*)(m_Controls->m_Average), SIGNAL(stateChanged(int)), this, SLOT(PerformChange()) );
     connect( (QObject*)(m_Controls->m_Segments), SIGNAL(valueChanged(int)), this, SLOT(PerformChange()) );
@@ -479,7 +480,7 @@ void QmitkTractbasedSpatialStatisticsView::AddTbssToDataStorage(mitk::Image* ima
 }
 
 
-void QmitkTractbasedSpatialStatisticsView::Clicked(const QwtDoublePoint& pos)
+void QmitkTractbasedSpatialStatisticsView::Clicked(const QPointF& pos)
 {
   int index = (int)pos.x();
 

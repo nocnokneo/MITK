@@ -144,6 +144,7 @@ option(MITK_BUILD_ALL_APPS "Build all MITK applications" OFF)
 set(MITK_BUILD_TUTORIAL OFF CACHE INTERNAL "Deprecated! Use MITK_BUILD_EXAMPLES instead!")
 option(MITK_BUILD_EXAMPLES "Build the MITK Examples" ${MITK_BUILD_TUTORIAL})
 option(MITK_USE_ACVD "Use Approximated Centroidal Voronoi Diagrams" OFF)
+option(MITK_USE_GLEW "Use the GLEW library" ON)
 option(MITK_USE_Boost "Use the Boost C++ library" OFF)
 option(MITK_USE_BLUEBERRY "Build the BlueBerry platform" ON)
 option(MITK_USE_CTK "Use CTK in MITK" ${MITK_USE_BLUEBERRY})
@@ -151,6 +152,7 @@ option(MITK_USE_QT "Use Nokia's Qt library" ${MITK_USE_CTK})
 option(MITK_USE_DCMTK "EXPERIMENTAL, superbuild only: Use DCMTK in MITK" ${MITK_USE_CTK})
 option(MITK_USE_OpenCV "Use Intel's OpenCV library" OFF)
 option(MITK_USE_OpenCL "Use OpenCL GPU-Computing library" OFF)
+option(MITK_USE_Poco "Use the Poco library" ON)
 option(MITK_USE_SOFA "Use Simulation Open Framework Architecture" OFF)
 option(MITK_USE_Python "Use Python wrapping in MITK" OFF)
 set(MITK_USE_CableSwig ${MITK_USE_Python})
@@ -160,6 +162,7 @@ if(MITK_USE_Python)
 endif()
 
 mark_as_advanced(MITK_BUILD_ALL_APPS
+                 MITK_USE_GLEW
                  MITK_USE_CTK
                  MITK_USE_DCMTK
                 )
@@ -368,7 +371,6 @@ find_package(ITK REQUIRED)
 find_package(VTK REQUIRED)
 
 find_package(GDCM PATHS ${ITK_GDCM_DIR} REQUIRED)
-include(${GDCM_USE_FILE})
 
 #-----------------------------------------------------------------------------
 # Set MITK specific options and variables (NOT available during superbuild)
@@ -666,10 +668,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MITK_EXE_LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${MITK_SHARED_LINKER_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${MITK_MODULE_LINKER_FLAGS}")
 
-if(MITK_USE_QT)
-  add_definitions(-DQWT_DLL)
-endif()
-
 #-----------------------------------------------------------------------------
 # Add custom targets representing CDash subprojects
 #-----------------------------------------------------------------------------
@@ -919,7 +917,6 @@ configure_file(mitkExportMacros.h.in ${MITK_BINARY_DIR}/mitkExportMacros.h)
 configure_file(mitkVersion.h.in ${MITK_BINARY_DIR}/mitkVersion.h)
 configure_file(mitkConfig.h.in ${MITK_BINARY_DIR}/mitkConfig.h)
 
-set(VECMATH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utilities/vecmath)
 set(IPFUNC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utilities/ipFunc)
 set(UTILITIES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utilities)
 

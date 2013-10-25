@@ -397,6 +397,8 @@ std::vector<std::string> mitk::ImageWriter::GetPossibleFileExtensions()
   possibleFileExtensions.push_back(".vtk");
   possibleFileExtensions.push_back(".vti");
   possibleFileExtensions.push_back(".hdr");
+  possibleFileExtensions.push_back(".img");
+  possibleFileExtensions.push_back(".img.gz");
   possibleFileExtensions.push_back(".png");
   possibleFileExtensions.push_back(".tif");
   possibleFileExtensions.push_back(".jpg");
@@ -432,9 +434,16 @@ const char* mitk::ImageWriter::GetDefaultFilename()
 
 const char* mitk::ImageWriter::GetFileDialogPattern()
 {
-  return "Image (*.bmp *.dcm *.DCM *.dicom *.DICOM *.gipl *.gipl.gz *.mha "
-      "*.nii *.nii.gz *.nrrd *.nhdr *.png *.PNG *.spr *.mhd *.vtk *.vti *.hdr *.png "
-      "*.tif *.jpg)";
+  return
+      "Nearly Raw Raster Data (*.nrrd);;"
+      "NIfTI format (*.nii *.nii.gz);;"
+      "VTK Image Data Files (*.vti);;"
+      "NRRD with detached header (*.nhdr);;"
+      "Analyze Format (*.hdr);;"
+      "MetaImage (*.mhd);;"
+      "Sets of 2D slices (*.png *.tiff *.jpg *.jpeg *.bmp);;"
+      "DICOM (*.dcm *.DCM *.dicom *.DICOM);;"
+      "UMDS GIPL Format Files (*.gipl *.gipl.gz)";
 }
 
 const char *mitk::ImageWriter::GetDefaultExtension()

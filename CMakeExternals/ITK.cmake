@@ -74,7 +74,7 @@ if(NOT DEFINED ITK_DIR)
      SOURCE_DIR ${CMAKE_BINARY_DIR}/${proj}-src
      BINARY_DIR ${proj}-build
      PREFIX ${proj}-cmake
-     GIT_REPOSITORY http://github.com/nocnokneo/ITK.git
+     GIT_REPOSITORY https://github.com/nocnokneo/ITK.git
      GIT_TAG cuda-v4
      INSTALL_COMMAND ""
      PATCH_COMMAND ${ITK_PATCH_COMMAND}

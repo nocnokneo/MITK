@@ -135,6 +135,7 @@ set(MODULE_CUSTOM_TESTS
     mitkPointSetVtkMapper2DTest.cpp
     mitkPointSetVtkMapper2DImageTest.cpp
     mitkPointSetVtkMapper2DGlyphTypeTest.cpp
+    mitkPointSetVtkMapper2DTransformedPointsTest.cpp
     mitkLabelOverlay3DRendering2DTest.cpp
     mitkLabelOverlay3DRendering3DTest.cpp
     mitkTextOverlay2DRenderingTest.cpp
@@ -142,7 +143,12 @@ set(MODULE_CUSTOM_TESTS
     mitkTextOverlay3DRendering2DTest.cpp
     mitkTextOverlay3DRendering3DTest.cpp
     mitkTextOverlay3DColorRenderingTest.cpp
+    mitkVTKRenderWindowSizeTest.cpp
 )
+
+if (${VTK_MAJOR_VERSION} VERSION_LESS 6) # test can be removed with VTK 6
+  set(MODULE_TESTS ${MODULE_TESTS} mitkVTKRenderWindowSizeTest.cpp)
+endif()
 
 set(MODULE_RESOURCE_FILES
   Interactions/AddAndRemovePoints.xml

@@ -160,11 +160,13 @@ if(MITK_USE_Python)
   FIND_PACKAGE(PythonLibs REQUIRED)
   FIND_PACKAGE(PythonInterp REQUIRED)
 endif()
+option(CUDA_TOOLKIT_ROOT_DIR "Path to the CUDA Toolkit directory" "")
 
 mark_as_advanced(MITK_BUILD_ALL_APPS
                  MITK_USE_GLEW
                  MITK_USE_CTK
                  MITK_USE_DCMTK
+                 CUDA_TOOLKIT_ROOT_DIR
                 )
 
 

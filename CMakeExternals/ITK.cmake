@@ -63,10 +63,15 @@ if(NOT DEFINED ITK_DIR)
          -DOpenCV_DIR:PATH=${OpenCV_DIR}
         )
   endif()
-  
-  option(CUDA_TOOLKIT_ROOT_DIR
-         "Path to the CUDA Toolkit directory (contains bin, lib, doc, include, etc.)"
-         /usr/local/cuda)
+
+  if(CUDA_TOOLKIT_ROOT_DIR)
+    if(NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+      message(FATAL_ERROR "CUDA_TOOLKIT_ROOT_DIR variable is defined but corresponds to non-existing directory")
+    endif()
+    list(APPEND additional_cmake_args
+         -DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_TOOLKIT_ROOT_DIR}
+        )
+  endif()
 
   set(ITK_PATCH_COMMAND ${CMAKE_COMMAND} -DTEMPLATE_FILE:FILEPATH=${MITK_SOURCE_DIR}/CMakeExternals/EmptyFileForPatching.dummy -P ${MITK_SOURCE_DIR}/CMakeExternals/PatchITK-4.3.1.cmake)
 
@@ -86,7 +91,6 @@ if(NOT DEFINED ITK_DIR)
        -DBUILD_EXAMPLES:BOOL=OFF
        -DITK_USE_SYSTEM_GDCM:BOOL=ON
        -DGDCM_DIR:PATH=${GDCM_DIR}
-       -DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_TOOLKIT_ROOT_DIR}
      DEPENDS ${proj_DEPENDENCIES}
     )
 

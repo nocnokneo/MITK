@@ -130,6 +130,7 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
         set(UI_FILES )
         set(MOC_H_FILES )
         set(QRC_FILES )
+        set(CU_FILES )
 
         # clear other variables
         set(Q${KITNAME}_GENERATED_MOC_CPP )
@@ -300,6 +301,11 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
 
           set(Q${KITNAME}_GENERATED_CPP ${Q${KITNAME}_GENERATED_CPP} ${Q${KITNAME}_GENERATED_UI_CPP} ${Q${KITNAME}_GENERATED_MOC_CPP} ${Q${KITNAME}_GENERATED_QRC_CPP})
         endif()
+        
+        set(${KITNAME}_GENERATED_CU_CPP )
+        if (CU_FILES)
+          CUDA_COMPILE(${KITNAME}_GENERATED_CU_CPP ${CU_FILES})
+        endif()
 
         ORGANIZE_SOURCES(SOURCE ${CPP_FILES}
                          HEADER ${H_FILES}
@@ -326,8 +332,8 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
           endif(ALL_LIBRARY_DIRS)
 
           add_library(${MODULE_PROVIDES} ${_STATIC}
-                      ${coverage_sources} ${CPP_FILES_GENERATED} ${Q${KITNAME}_GENERATED_CPP}
-                      ${DOX_FILES} ${UI_FILES} ${QRC_FILES})
+                      ${coverage_sources} ${CPP_FILES_GENERATED} ${Q${KITNAME}_GENERATED_CPP} ${${KITNAME}_GENERATED_CU_CPP}
+                      ${DOX_FILES} ${UI_FILES} ${QRC_FILES} ${CU_FILES})
 
           if(MODULE_TARGET_DEPENDS)
             add_dependencies(${MODULE_PROVIDES} ${MODULE_TARGET_DEPENDS})

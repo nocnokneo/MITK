@@ -2,6 +2,7 @@ set(LIBPOSTFIX "Ext")
 
 # Modules must be listed according to their dependencies
 set(module_dirs
+    Qt4Qt5TestModule
     SceneSerializationBase
     PlanarFigure
     ImageExtraction
@@ -15,6 +16,8 @@ set(module_dirs
     SurfaceInterpolation
     Segmentation
     PlanarFigureSegmentation
+    OpenViewCore
+    QmlMitk
     Qmitk
     QmitkExt
     SegmentationUI

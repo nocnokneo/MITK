@@ -39,10 +39,12 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
                              # automatic loading of this module
       ADDITIONAL_LIBS        # list of addidtional libraries linked to this module
       GENERATED_CPP          # not used (?)
+      QT4_MODULES            # the module depends on a given list of Qt 4 modules
+      QT5_MODULES            # the module depends on a given list of Qt 5 modules
      )
 
   set(_macro_options
-      QT_MODULE              # the module makes use of Qt features and needs moc and ui generated files
+      QT_MODULE              # the module makes use of Qt4 features and needs moc and ui generated files
       FORCE_STATIC           # force building this module as a static library
       HEADERS_ONLY           # this module is a headers-only library
       GCC_DEFAULT_VISIBILITY # do not use gcc visibility flags - all symbols will be exported
@@ -53,6 +55,23 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
   MACRO_PARSE_ARGUMENTS(MODULE "${_macro_params}" "${_macro_options}" ${ARGN})
 
   set(MODULE_NAME ${MODULE_NAME_IN})
+  
+  if (MODULE_QT_MODULE)
+    message(WARNING "QT_MODULE keyword is deprecated (in module ${MODULE_NAME}). Please replace QT_MODULE by the more specific QT4_MODULES / QT5_MODULES!")
+  endif()
+
+  if (MODULE_QT4_MODULES)
+    set (MODULE_QT_MODULE TRUE) # defines that we want to process UIC_FILES, QRC_FILES etc. from files.cmake
+    if (DESIRED_QT_VERSION MATCHES 4)
+      list(APPEND MODULE_PACKAGE_DEPENDS Qt4) # QT4_MODULES will create package dependency to Qt4 and define a list of Qt 4 components
+    endif()
+  endif()
+  if (MODULE_QT5_MODULES)
+    set (MODULE_QT_MODULE TRUE)
+    if (DESIRED_QT_VERSION MATCHES 5)
+      list(APPEND MODULE_PACKAGE_DEPENDS ${MODULE_QT5_MODULES}) # QT5_MODULES is just an alias for PACKAGE_DEPENDS
+    endif()
+  endif()
 
   if(MODULE_HEADERS_ONLY)
     set(MODULE_PROVIDES )
@@ -115,10 +134,29 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
       # MITK_CHECK_MODULE ...
       foreach(_package ${MODULE_PACKAGE_DEPENDS})
         if((DEFINED MITK_USE_${_package}) AND NOT (MITK_USE_${_package}))
-          message("Module ${MODULE_NAME} won't be built. Turn on MITK_USE_${_package} if you want to use it.")
-          set(MODULE_IS_ENABLED 0)
-        endif()
+          if (${_package} MATCHES "Qt[45]")
+            message("Module ${MODULE_NAME} won't be built because we lack ${_package}. Check CMake switches MITK_USE_QT and DESIRED_QT_VERSION.")
+          else()
+            message("Module ${MODULE_NAME} won't be built. Turn on MITK_USE_${_package} if you want to use it.")
+          endif()
+            set(MODULE_IS_ENABLED 0)
+          endif()
       endforeach()
+
+      if (MODULE_QT_MODULE) # disable module if it 1. needs Qt 2. has only one of QT4_MODULES/QT5_MODULES set and 3. DESIRED_QT_VERSION does not match the module
+        if (DESIRED_QT_VERSION MATCHES 4)
+          if (NOT MODULE_QT4_MODULES)
+            set (MODULE_IS_ENABLED 0)
+          endif()
+        endif()
+        
+        if (DESIRED_QT_VERSION MATCHES 5)
+          if (NOT MODULE_QT5_MODULES)
+            set (MODULE_IS_ENABLED 0)
+          endif()
+        endif()
+      endif()
+
       if(MODULE_IS_ENABLED)
 
         # clear variables defined in files.cmake
@@ -286,18 +324,43 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
 
         endif()
 
-        if(MODULE_QT_MODULE)
-          if(UI_FILES)
-            QT4_WRAP_UI(Q${KITNAME}_GENERATED_UI_CPP ${UI_FILES})
-          endif(UI_FILES)
+        # Qt 4 case
+        if(MODULE_QT4_MODULES)
+          if (DESIRED_QT_VERSION MATCHES 4)
+            #if (NOT QT_FOUND) # we cannot test QT_FOUND because we want specific modules. Can we rely on Qt4Core?
+            #  message(WARNING "You declared QT4_MODULES without a single Qt4 module. This will soon result in errors.")
+            #endif()
 
-          if(MOC_H_FILES)
-            QT4_WRAP_CPP(Q${KITNAME}_GENERATED_MOC_CPP ${MOC_H_FILES} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
-          endif(MOC_H_FILES)
+            if(UI_FILES)
+                qt4_wrap_ui(Q${KITNAME}_GENERATED_UI_CPP ${UI_FILES})
+            endif(UI_FILES)
+            if(MOC_H_FILES)
+                qt4_wrap_cpp(Q${KITNAME}_GENERATED_MOC_CPP ${MOC_H_FILES} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
+            endif(MOC_H_FILES)
+            if(QRC_FILES)
+                qt4_add_resources(Q${KITNAME}_GENERATED_QRC_CPP ${QRC_FILES})
+            endif(QRC_FILES)
+          endif()
+          set(Q${KITNAME}_GENERATED_CPP ${Q${KITNAME}_GENERATED_CPP} ${Q${KITNAME}_GENERATED_UI_CPP} ${Q${KITNAME}_GENERATED_MOC_CPP} ${Q${KITNAME}_GENERATED_QRC_CPP})
+        endif()
 
-          if(QRC_FILES)
-            QT4_ADD_RESOURCES(Q${KITNAME}_GENERATED_QRC_CPP ${QRC_FILES})
-          endif(QRC_FILES)
+        # all the same for Qt 5
+        if(MODULE_QT5_MODULES)
+          if (DESIRED_QT_VERSION MATCHES 5)
+            #if (NOT QT_FOUND)
+            #  message(WARNING "You declared QT5_MODULES without a single Qt5 module. This will soon result in errors.")
+            #endif()
+
+            if(UI_FILES)
+                qt5_wrap_ui(Q${KITNAME}_GENERATED_UI_CPP ${UI_FILES})
+            endif(UI_FILES)
+            if(MOC_H_FILES)
+                qt5_wrap_cpp(Q${KITNAME}_GENERATED_MOC_CPP ${MOC_H_FILES} OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
+            endif(MOC_H_FILES)
+            if(QRC_FILES)
+                qt5_add_resources(Q${KITNAME}_GENERATED_QRC_CPP ${QRC_FILES})
+            endif(QRC_FILES)
+          endif()
 
           set(Q${KITNAME}_GENERATED_CPP ${Q${KITNAME}_GENERATED_CPP} ${Q${KITNAME}_GENERATED_UI_CPP} ${Q${KITNAME}_GENERATED_MOC_CPP} ${Q${KITNAME}_GENERATED_QRC_CPP})
         endif()
@@ -349,11 +412,7 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
           if(ALL_LIBRARIES)
             target_link_libraries(${MODULE_PROVIDES} ${ALL_LIBRARIES})
           endif(ALL_LIBRARIES)
-
-          if(MODULE_QT_MODULE AND QT_LIBRARIES)
-            target_link_libraries(${MODULE_PROVIDES} ${QT_LIBRARIES})
-          endif()
-
+ 
           if(MINGW)
             target_link_libraries(${MODULE_PROVIDES} ssp) # add stack smash protection lib
           endif()

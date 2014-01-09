@@ -67,7 +67,7 @@ set(MITK_USE_VTK 1)
 
 # Semi-hard dependencies, enabled by user-controlled variables
 set(MITK_USE_CableSwig ${MITK_USE_Python})
-if(MITK_USE_QT)
+if(MITK_USE_QT AND DESIRED_QT_VERSION MATCHES 4)
   set(MITK_USE_Qwt 1) #TODO: Check if/how Qwt builds with Qt 5
   set(MITK_USE_Qxt 1) #TODO: Check if/how Qwt builds with Qt 5
 endif()

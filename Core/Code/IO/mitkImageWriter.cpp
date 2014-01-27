@@ -24,6 +24,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include <itkImageIOBase.h>
 #include <itkImageIOFactory.h>
+#include <itksys/SystemTools.hxx>
 
 
 mitk::ImageWriter::ImageWriter()
@@ -226,6 +227,17 @@ void mitk::ImageWriter::GenerateData()
   {
     itkWarningMacro( << "Sorry, filename has not been set!" );
     return ;
+  }
+
+  // Try to create the target directory if it does not exist
+  std::string targetDir = itksys::SystemTools::GetFilenamePath(m_FileName);
+  if (!targetDir.empty())
+  {
+    if ( ! itksys::SystemTools::MakeDirectory(targetDir.c_str()) )
+    {
+      itkExceptionMacro(<<"Failed to create target directory: " << targetDir);
+      return;
+    }
   }
 
   FILE* tempFile = fopen(m_FileName.c_str(),"w");

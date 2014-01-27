@@ -396,7 +396,7 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
 
           add_library(${MODULE_PROVIDES} ${_STATIC}
                       ${coverage_sources} ${CPP_FILES_GENERATED} ${Q${KITNAME}_GENERATED_CPP} ${${KITNAME}_GENERATED_CU_CPP}
-                      ${DOX_FILES} ${UI_FILES} ${QRC_FILES} ${CU_FILES})
+                      ${DOX_FILES} ${UI_FILES} ${QRC_FILES} ${CU_FILES} ${H_FILES} ${MOC_H_FILES})
 
           if(MODULE_TARGET_DEPENDS)
             add_dependencies(${MODULE_PROVIDES} ${MODULE_TARGET_DEPENDS})

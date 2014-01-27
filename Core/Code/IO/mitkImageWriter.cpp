@@ -174,6 +174,7 @@ void mitk::ImageWriter::WriteByITK(mitk::Image* image, const std::string& fileNa
                              static_cast<itk::ImageIOBase::IOComponentType>(pixelType.GetComponentType()) :
                              itk::ImageIOBase::UNKNOWNCOMPONENTTYPE);
   imageIO->SetNumberOfComponents( pixelType.GetNumberOfComponents() );
+  imageIO->SetMetaDataDictionary( image->GetMetaDataDictionary() );
 
   itk::ImageIORegion ioRegion( dimension );
 
@@ -251,6 +252,7 @@ void mitk::ImageWriter::GenerateData()
 
   // Creating clone of input image, since i might change the geometry
   mitk::Image::Pointer input = const_cast<mitk::Image*>(this->GetInput())->Clone();
+  input->SetMetaDataDictionary(this->GetInput()->GetMetaDataDictionary());
 
   // Check if geometry information will be lost
   if (input->GetDimension() == 2)

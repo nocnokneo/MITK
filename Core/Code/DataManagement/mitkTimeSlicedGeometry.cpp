@@ -47,7 +47,11 @@ void mitk::TimeSlicedGeometry::UpdateInformation()
   for(t=0; t < m_TimeSteps; ++t)
   {
     geometry3d = GetGeometry3D(t);
-    assert(geometry3d!=NULL);
+//    assert(geometry3d!=NULL);
+    if (geometry3d == NULL)
+    {
+       return;
+    }
 
     curModifiedTime = geometry3d->GetMTime();
     if(maxModifiedTime < curModifiedTime)

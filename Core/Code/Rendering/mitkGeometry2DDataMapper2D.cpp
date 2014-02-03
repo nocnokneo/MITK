@@ -96,9 +96,11 @@ void mitk::Geometry2DDataMapper2D::Paint(BaseRenderer *renderer)
   Geometry2DData::Pointer input = const_cast< Geometry2DData * >(this->GetInput());
 
   // intersecting with ourself?
-  if ( input.IsNull() || (this->GetInput()->GetGeometry2D() ==
-       renderer->GetCurrentWorldGeometry2D()) )
-  {
+  if ( input.IsNull() ||
+       this->GetInput()->GetGeometry2D() == NULL ||
+       renderer->GetCurrentWorldGeometry2D() == NULL ||
+       (this->GetInput()->GetGeometry2D() == renderer->GetCurrentWorldGeometry2D()))
+   {
     return; // do nothing!
   }
 
@@ -288,6 +290,10 @@ void mitk::Geometry2DDataMapper2D::Paint(BaseRenderer *renderer)
             static_cast< Geometry2DData * >(
               (*otherPlanesIt)->GetData() )->GetGeometry2D() );
 
+          if (otherPlane == NULL)
+          {
+             continue;
+          }
 
           // Just as with the original line, calculate the intersection with
           // the world geometry...

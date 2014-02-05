@@ -28,6 +28,8 @@ namespace mitk {
 
    mitkDeclareGenericProperty(IntProperty,int,MITK_CORE_EXPORT);
 
+   mitkDeclareGenericProperty(LongLongProperty,long long,MITK_CORE_EXPORT);
+
    mitkDeclareGenericProperty(FloatProperty,float,MITK_CORE_EXPORT);
 
    mitkDeclareGenericProperty(DoubleProperty,double,MITK_CORE_EXPORT);

@@ -32,7 +32,7 @@ class OVCORE_EXPORT QVTKQuickItem : public QQuickItem
 {
   Q_OBJECT
 public:
-  QVTKQuickItem(QQuickItem* parent = 0);
+  QVTKQuickItem(QQuickItem* parent = 0, bool paintBeforeSceneGraph = true);
 
   // Description:
   // destructor
@@ -102,6 +102,7 @@ private:
   QVTKInteractorAdapter* m_interactorAdapter;
   vtkSmartPointer<vtkEventQtSlotConnect> m_connect;
 
+  bool m_PaintBeforeSceneGraph;  // Choose whether this window paints before QML or after QML.
   bool m_InitCalledOnce;
 };
 

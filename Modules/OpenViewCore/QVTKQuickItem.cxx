@@ -30,8 +30,9 @@
 
 #include <iostream>
 
-QVTKQuickItem::QVTKQuickItem(QQuickItem* parent)
-:QQuickItem(parent)
+QVTKQuickItem::QVTKQuickItem(QQuickItem* parent, bool paintBeforeSceneGraph)
+ :QQuickItem(parent)
+ ,m_PaintBeforeSceneGraph(paintBeforeSceneGraph)
 ,m_InitCalledOnce(false)
 {
   setFlag(ItemHasContents);
@@ -113,10 +114,18 @@ void QVTKQuickItem::itemChange(ItemChange change, const ItemChangeData &)
       return;
       }
 
-    // Connect our the beforeRendering signal to our paint function.
+    // Connect our the rendering signal to our paint function.
+    // Choose whether to paint before or after the QML scene graph.
     // Since this call is executed on the rendering thread it must be
     // a Qt::DirectConnection
-    connect(c, SIGNAL(beforeRendering()), this, SLOT(paint()), Qt::DirectConnection);
+    if (m_PaintBeforeSceneGraph)
+      {
+      connect(c, SIGNAL(beforeRendering()), this, SLOT(paint()), Qt::DirectConnection);
+      } 
+    else
+      {
+      connect(c, SIGNAL(afterRendering()), this, SLOT(paint()), Qt::DirectConnection);
+      }
 
     // If we allow QML to do the clearing, they would clear what we paint
     // and nothing would show.

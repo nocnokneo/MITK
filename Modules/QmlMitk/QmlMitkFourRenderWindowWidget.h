@@ -6,8 +6,11 @@
 #include "QmlMitkRenderWindowItem.h"
 
 #include "mitkDataStorage.h"
+#include "mitkBaseRenderer.h"
 
 #include "QmlMitkExports.h"
+
+#include <QList>
 
 /**
   \brief QML replacement for QmitkStdMultiWidget.
@@ -20,17 +23,19 @@
 class QmlMitk_EXPORT QmlMitkFourRenderWindowWidget : public QQuickItem
 {
     Q_OBJECT
-
 public:
 
   QmlMitkFourRenderWindowWidget(QQuickItem* parent = 0);
   virtual ~QmlMitkFourRenderWindowWidget();
 
+
   void SetDataStorage( mitk::DataStorage::Pointer storage );
+  QList<mitk::BaseRenderer*> GetRenderers();
 
 signals:
 
 public slots:
+  void continueLoading();
 
 protected slots:
 
@@ -53,6 +58,7 @@ private:
   QmlMitkRenderWindowItem* m_RenderItemFrontal;
   QmlMitkRenderWindowItem* m_RenderItem3D;
   
+  QQmlComponent* m_Component;
 };
 
 #endif

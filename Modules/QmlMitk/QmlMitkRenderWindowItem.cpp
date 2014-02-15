@@ -69,7 +69,11 @@
 
 QmlMitkRenderWindowItem* QmlMitkRenderWindowItem::GetInstanceForVTKRenderWindow( vtkRenderWindow* rw )
 {
-  return GetInstances()[rw];
+  if (GetInstances().contains(rw))
+  {
+    return GetInstances()[rw];
+  }
+  return 0;
 }
 
 QMap<vtkRenderWindow*, QmlMitkRenderWindowItem*>& QmlMitkRenderWindowItem::GetInstances()
@@ -101,10 +105,10 @@ void QmlMitkRenderWindowItem::init()
 {
   QVTKQuickItem::init();
 
-  mitk::DataStorage::Pointer m_DataStorage = mitk::RenderWindowBase::GetRenderer()->GetDataStorage();
-  if (m_DataStorage.IsNotNull())
+  mitk::DataStorage::Pointer dataStorage = mitk::RenderWindowBase::GetRenderer()->GetDataStorage();
+  if (dataStorage.IsNotNull())
   {
-    mitk::RenderingManager::GetInstance()->InitializeViews( m_DataStorage->ComputeBoundingGeometry3D(m_DataStorage->GetAll()) );
+    mitk::RenderingManager::GetInstance()->InitializeViews( dataStorage->ComputeBoundingGeometry3D(dataStorage->GetAll()) );
   }
 
   // TODO the following code needs to be moved to a multi-widget item
@@ -114,7 +118,7 @@ void QmlMitkRenderWindowItem::init()
   }
 
   if ( mitk::RenderWindowBase::GetRenderer()->GetMapperID() == mitk::BaseRenderer::Standard2D 
-      && m_DataStorage.IsNotNull() )
+      && dataStorage.IsNotNull() )
   {
 
     mitk::DataNode::Pointer planeNode = mitk::RenderWindowBase::GetRenderer()->GetCurrentWorldGeometry2DNode();
@@ -137,24 +141,17 @@ void QmlMitkRenderWindowItem::init()
     planeNode->SetProperty("helper object", mitk::BoolProperty::New(true) );
 
     mitk::Geometry2DDataMapper2D::Pointer mapper = mitk::Geometry2DDataMapper2D::New();
-    mapper->SetDatastorageAndGeometryBaseNode( m_DataStorage, m_PlaneNodeParent );
+    mapper->SetDatastorageAndGeometryBaseNode( dataStorage, m_PlaneNodeParent );
     planeNode->SetMapper( mitk::BaseRenderer::Standard2D, mapper );
 
-    m_DataStorage->Add( planeNode, m_PlaneNodeParent );
+    dataStorage->Add( planeNode, m_PlaneNodeParent );
   }
-}
-  
-void QmlMitkRenderWindowItem::InitView( mitk::BaseRenderer::MapperSlotId mapperID,
-                                        mitk::SliceNavigationController::ViewDirection viewDirection )
-{
-  m_MapperID = mapperID;
-  m_ViewDirection = viewDirection;
 }
 
     
 void QmlMitkRenderWindowItem::SetDataStorage(mitk::DataStorage::Pointer storage)
 {
-  m_DataStorage = storage;
+  mitk::RenderWindowBase::GetRenderer()->SetDataStorage(storage);
 }
 
 mitk::Point2D QmlMitkRenderWindowItem::GetMousePosition(QMouseEvent* me) const

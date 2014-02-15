@@ -66,7 +66,7 @@ IF(CUDA_FOUND)
     ENDIF()
 
     IF(GCC_PATH)
-      MESSAGE(STATUS "nvcc-check: Found adequate gcc (${GCC_PATH})... telling nvcc to use it!")
+      #MESSAGE(STATUS "nvcc-check: Found adequate gcc (${GCC_PATH})... telling nvcc to use it!")
       LIST(APPEND CUDA_NVCC_FLAGS --compiler-bindir ${GCC_PATH})
     ELSE(GCC_PATH)
       MESSAGE(FATAL_ERROR "nvcc-check: Please install adequate gcc for cuda.\nNote that gcc-4.x can be installed side-by-side with your current version of gcc.\n")

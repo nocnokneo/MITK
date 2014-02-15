@@ -66,22 +66,11 @@ protected:
   virtual void mouseMoveEvent(QMouseEvent* e);
   virtual void wheelEvent(QWheelEvent* e);
 
-private slots:
+  static QMap<vtkRenderWindow*, QmlMitkRenderWindowItem*>& GetInstances();
 
-private:
-    mitk::DataStorage::Pointer m_DataStorage;
-    mitk::DataNode::Pointer m_PlaneNodeParent;
-
-    mitk::BaseRenderer::MapperSlotId m_MapperID;
-    mitk::SliceNavigationController::ViewDirection m_ViewDirection;
-
-
-    QTimer m_Animation;
-
-    vtkSmartPointer<vtkEventQtSlotConnect> m_connect;
-
-    static QMap<vtkRenderWindow*, QmlMitkRenderWindowItem*>& GetInstances();
-
+  mitk::DataNode::Pointer m_PlaneNodeParent;
+  
+  
 };
 
 #endif

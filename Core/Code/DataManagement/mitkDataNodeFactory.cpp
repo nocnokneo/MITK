@@ -457,6 +457,7 @@ void mitk::DataNodeFactory::SetDefaultCommonProperties(mitk::DataNode::Pointer &
   mitk::StringProperty::Pointer pathProp = mitk::StringProperty::New( itksys::SystemTools::GetFilenamePath( m_FileName ) );
   node->SetProperty( StringProperty::PATH, pathProp );
 
+  node->SetProperty("filePath", mitk::StringProperty::New(m_FileName));
 
   // name already defined?
   mitk::StringProperty::Pointer nameProp = dynamic_cast<mitk::StringProperty*>(node->GetProperty("name"));

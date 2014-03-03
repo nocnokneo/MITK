@@ -42,14 +42,14 @@ namespace mitk {
     // the end
     typedef itk::VersorRigid3DTransform< double > TransformType;
 
-    mitkClassMacro(NavigationDataTransformFilter, NavigationDataToNavigationDataFilter);
-    itkNewMacro(Self);
+    mitkClassMacro(NavigationDataTransformFilter, NavigationDataToNavigationDataFilter)
+    itkNewMacro(Self)
 
     /**Documentation
     * \brief Set the rigid transform used to transform the input navigation data.
     */
-    itkSetObjectMacro(Rigid3DTransform, TransformType);
-    itkGetConstObjectMacro(Rigid3DTransform, TransformType);
+    itkSetObjectMacro(Rigid3DTransform, TransformType)
+    itkGetConstObjectMacro(Rigid3DTransform, TransformType)
 
     /**Documentation
     * \brief Set transform composition order
@@ -64,9 +64,9 @@ namespace mitk {
     * consists of first applying the NavigationData transformation, followed by
     * transform.
     */
-    itkSetMacro(Precompose, bool);
-    itkGetMacro(Precompose, bool);
-    itkBooleanMacro(Precompose);
+    itkSetMacro(Precompose, bool)
+    itkGetMacro(Precompose, bool)
+    itkBooleanMacro(Precompose)
 
   protected:
 

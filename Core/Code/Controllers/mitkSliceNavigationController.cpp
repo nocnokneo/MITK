@@ -424,6 +424,9 @@ SliceNavigationController
 void
 SliceNavigationController::SelectSliceByPoint( const Point3D &point )
 {
+  if ( m_CreatedWorldGeometry.IsNull() )
+     return;
+
   //@todo add time to PositionEvent and use here!!
   SlicedGeometry3D* slicedWorldGeometry = dynamic_cast< SlicedGeometry3D * >(
     m_CreatedWorldGeometry->GetGeometry3D( this->GetTime()->GetPos() ) );

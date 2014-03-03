@@ -198,10 +198,13 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
 void
 mitk::NavigationDataSliceVisualization::SaveLastUserSelectedSlice()
 {
-  m_LastUserSelectedSlice = m_Renderer->GetSliceNavigationController()->GetSlice()->GetPos();
   TimeSlicedGeometry::ConstPointer userWorldGeometry = m_Renderer->GetSliceNavigationController()->GetCreatedWorldGeometry();
-  m_LastUserSelectedSliceAxes[0] = userWorldGeometry->GetAxisVector(0);
-  m_LastUserSelectedSliceAxes[1] = userWorldGeometry->GetAxisVector(1);
+  if (userWorldGeometry)
+  {
+     m_LastUserSelectedSlice = m_Renderer->GetSliceNavigationController()->GetSlice()->GetPos();
+     m_LastUserSelectedSliceAxes[0] = userWorldGeometry->GetAxisVector(0);
+     m_LastUserSelectedSliceAxes[1] = userWorldGeometry->GetAxisVector(1);
+  }
 }
 
 void

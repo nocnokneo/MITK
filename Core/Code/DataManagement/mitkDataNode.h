@@ -149,6 +149,8 @@ public:
   //## @sa m_MapOfPropertyLists
   void ReplaceProperty(const char *propertyKey, BaseProperty* property, const mitk::BaseRenderer* renderer = NULL);
 
+  void DeleteProperty(const char *propertyKey);
+
   //##Documentation
   //## @brief Add the property (instance of BaseProperty) if it does
   //## not exist (or always if \a overwrite is \a true)

@@ -423,6 +423,16 @@ void mitk::DataNode::ReplaceProperty(const char *propertyKey,
   GetPropertyList(renderer)->ReplaceProperty(propertyKey, propertyValue);
 }
 
+void mitk::DataNode::DeleteProperty(const char *propertyKey)
+{
+   m_PropertyList->DeleteProperty(propertyKey);
+   for (MapOfPropertyLists::iterator it = m_MapOfPropertyLists.begin();
+        it != m_MapOfPropertyLists.end(); ++it)
+   {
+      it->second->DeleteProperty(propertyKey);
+   }
+}
+
 void mitk::DataNode::AddProperty(const char *propertyKey,
                                      BaseProperty* propertyValue,
                                      const mitk::BaseRenderer* renderer,

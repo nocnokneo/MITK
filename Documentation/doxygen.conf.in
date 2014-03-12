@@ -776,14 +776,16 @@ EXCLUDE_SYMBOLS        =
 
 EXAMPLE_PATH           = @MITK_SOURCE_DIR@/Examples/ \
                          @MITK_SOURCE_DIR@/Examples/Tutorial/ \
-                        @MITK_SOURCE_DIR@/Examples/Plugins/ \
+                         @MITK_SOURCE_DIR@/Examples/Plugins/ \
                          @MITK_SOURCE_DIR@/Examples/QtFreeRender/ \
                          @MITK_SOURCE_DIR@/Core/Code/ \
-                         @MITK_SOURCE_DIR@/Core/Code/CppMicroServices/Documentation/Snippets/ \
+                         @MITK_SOURCE_DIR@/Core/CppMicroServices/documentation/snippets/ \
+                         @MITK_SOURCE_DIR@/Core/CppMicroServices/examples/ \
                          @MITK_DOXYGEN_OUTPUT_DIR@/html/extension-points/html/ \
                          @MITK_SOURCE_DIR@/Documentation/Snippets/ \
                          @MITK_SOURCE_DIR@/Documentation/Doxygen/ExampleCode/ \
-                         @MITK_SOURCE_DIR@/Modules/OpenCL/Documentation/doxygen/snippets/
+                         @MITK_SOURCE_DIR@/Modules/OpenCL/Documentation/doxygen/snippets/ \
+                         @MITK_SOURCE_DIR@/Modules/IGT/Tutorial/
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -1607,6 +1609,8 @@ PREDEFINED             = itkNotUsed(x)= \
                          "itkSetVectorMacro(name,type,count)=                   virtual void Set##name(type data[]);" \
                          "itkGetVectorMacro(name,type,count)=                   virtual type* Get##name () const;" \
                          "itkNewMacro(type)=                   static Pointer New();" \
+                         "itkFactorylessNewMacro(type)=        static Pointer New();" \
+                         "itkCloneMacro(type)=                 Pointer Clone() const;" \
                          "itkTypeMacro(thisClass,superclass)=                   virtual const char *GetClassName() const;" \
                          "itkConceptMacro(name,concept)=                   enum { name = 0 };" \
                          "ITK_NUMERIC_LIMITS=                   std::numeric_limits" \

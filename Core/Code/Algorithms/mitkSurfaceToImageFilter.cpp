@@ -32,6 +32,8 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <vtkPolyDataNormals.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkTransform.h>
+#include <vtkSmartPointer.h>
+#include <mitkImageReadAccessor.h>
 
 
 mitk::SurfaceToImageFilter::SurfaceToImageFilter()
@@ -62,12 +64,12 @@ void mitk::SurfaceToImageFilter::GenerateOutputInformation()
 
   if((inputImage == NULL) ||
      (inputImage->IsInitialized() == false) ||
-     (inputImage->GetTimeSlicedGeometry() == NULL)) return;
+     (inputImage->GetTimeGeometry() == NULL)) return;
 
   if (m_MakeOutputBinary)
-    output->Initialize(mitk::MakeScalarPixelType<unsigned char>() , *inputImage->GetTimeSlicedGeometry());
+    output->Initialize(mitk::MakeScalarPixelType<unsigned char>() , *inputImage->GetTimeGeometry());
   else
-    output->Initialize(inputImage->GetPixelType(), *inputImage->GetTimeSlicedGeometry());
+    output->Initialize(inputImage->GetPixelType(), *inputImage->GetTimeGeometry());
 
   output->SetPropertyList(inputImage->GetPropertyList()->Clone());
 }
@@ -93,7 +95,7 @@ void mitk::SurfaceToImageFilter::GenerateData()
     int t;
     for(t=tstart;t<tmax;++t)
     {
-      Stencil3DImage( t );
+        Stencil3DImage( t );
     }
   }
   else
@@ -104,81 +106,91 @@ void mitk::SurfaceToImageFilter::GenerateData()
 
 void mitk::SurfaceToImageFilter::Stencil3DImage(int time)
 {
-  const mitk::TimeSlicedGeometry *surfaceTimeGeometry = GetInput()->GetTimeSlicedGeometry();
-  const mitk::TimeSlicedGeometry *imageTimeGeometry = GetImage()->GetTimeSlicedGeometry();
-
-  // Convert time step from image time-frame to surface time-frame
-  int surfaceTimeStep = surfaceTimeGeometry->TimeStepToTimeStep( imageTimeGeometry, time );
-
-  vtkPolyData * polydata = ( (mitk::Surface*)GetInput() )->GetVtkPolyData( surfaceTimeStep );
-
-  vtkTransformPolyDataFilter * move=vtkTransformPolyDataFilter::New();
-  move->SetInput(polydata);
-  move->ReleaseDataFlagOn();
-
-  vtkTransform *transform=vtkTransform::New();
-  Geometry3D* geometry = surfaceTimeGeometry->GetGeometry3D( surfaceTimeStep );
-  geometry->TransferItkToVtkTransform();
-  transform->PostMultiply();
-  transform->Concatenate(geometry->GetVtkTransform()->GetMatrix());
-  // take image geometry into account. vtk-Image information will be changed to unit spacing and zero origin below.
-  Geometry3D* imageGeometry = imageTimeGeometry->GetGeometry3D(time);
-  imageGeometry->TransferItkToVtkTransform();
-  transform->Concatenate(imageGeometry->GetVtkTransform()->GetLinearInverse());
-  move->SetTransform(transform);
-  transform->Delete();
-
-  vtkPolyDataNormals * normalsFilter = vtkPolyDataNormals::New();
-  normalsFilter->SetFeatureAngle(50);
-  normalsFilter->SetConsistency(1);
-  normalsFilter->SetSplitting(1);
-  normalsFilter->SetFlipNormals(0);
-  normalsFilter->ReleaseDataFlagOn();
-
-  normalsFilter->SetInput( move->GetOutput() );
-  move->Delete();
-
-  vtkPolyDataToImageStencil * surfaceConverter = vtkPolyDataToImageStencil::New();
-  surfaceConverter->SetTolerance( 0.0 );
-  surfaceConverter->ReleaseDataFlagOn();
-
-  surfaceConverter->SetInput( normalsFilter->GetOutput() );
-  normalsFilter->Delete();
-
+  mitk::Image::Pointer output = this->GetOutput();
   mitk::Image::Pointer binaryImage = mitk::Image::New();
 
+  unsigned int size = sizeof(unsigned char);
   if (m_MakeOutputBinary)
+    binaryImage->Initialize(mitk::MakeScalarPixelType<unsigned char>(), *this->GetImage()->GetTimeGeometry(),1,1);
+  else
   {
-    binaryImage->Initialize(mitk::MakeScalarPixelType<unsigned char>(), *this->GetImage()->GetTimeSlicedGeometry());
-
-    unsigned int size = sizeof(unsigned char);
-    for (unsigned int i = 0; i < binaryImage->GetDimension(); ++i)
-      size *= binaryImage->GetDimension(i);
-
-    mitk::ImageWriteAccessor accessor( binaryImage );
-    memset( accessor.GetData(), 1, size );
+    binaryImage->Initialize(this->GetImage()->GetPixelType(), *this->GetImage()->GetTimeGeometry(),1,1);
+    size = this->GetImage()->GetPixelType().GetSize();
   }
 
-  vtkImageData *image = m_MakeOutputBinary
-    ? binaryImage->GetVtkImageData(time)
-    : const_cast<mitk::Image *>(this->GetImage())->GetVtkImageData(time);
+  for (unsigned int i = 0; i < binaryImage->GetDimension(); ++i)
+    size *= binaryImage->GetDimension(i);
 
-  // Create stencil and use numerical minimum of pixel type as background value
-  vtkImageStencil *stencil = vtkImageStencil::New();
-  stencil->SetInput(image);
-  stencil->ReverseStencilOff();
-  stencil->ReleaseDataFlagOn();
-  stencil->SetStencil(surfaceConverter->GetOutput());
-  surfaceConverter->Delete();
+  mitk::ImageWriteAccessor accessor( binaryImage );
+  memset( accessor.GetData(), 1, size );
 
-  stencil->SetBackgroundValue(m_MakeOutputBinary ? 0 : m_BackgroundValue);
-  stencil->Update();
+  const mitk::TimeGeometry *surfaceTimeGeometry = GetInput()->GetTimeGeometry();
+  const mitk::TimeGeometry *imageTimeGeometry = GetImage()->GetTimeGeometry();
 
-  mitk::Image::Pointer output = this->GetOutput();
-  output->SetVolume( stencil->GetOutput()->GetScalarPointer(), time );
-  MITK_INFO << "stencil ref count: " << stencil->GetReferenceCount() << std::endl;
+  // Convert time step from image time-frame to surface time-frame
+  mitk::TimePointType matchingTimePoint = imageTimeGeometry->TimeStepToTimePoint(time);
+  mitk::TimeStepType surfaceTimeStep = surfaceTimeGeometry->TimePointToTimeStep(matchingTimePoint);
 
-  stencil->Delete();
+  vtkPolyData * polydata = ( (mitk::Surface*)GetInput() )->GetVtkPolyData( surfaceTimeStep );
+  if(polydata)
+  {
+    vtkSmartPointer<vtkTransformPolyDataFilter> move=vtkTransformPolyDataFilter::New();
+    move->SetInputData(polydata);
+    move->ReleaseDataFlagOn();
+
+    vtkSmartPointer<vtkTransform> transform=vtkTransform::New();
+    Geometry3D* geometry = surfaceTimeGeometry->GetGeometryForTimeStep( surfaceTimeStep );
+    if(!geometry)
+    {
+      geometry = GetInput()->GetGeometry();
+    }
+    geometry->TransferItkToVtkTransform();
+    transform->PostMultiply();
+    transform->Concatenate(geometry->GetVtkTransform()->GetMatrix());
+    // take image geometry into account. vtk-Image information will be changed to unit spacing and zero origin below.
+    Geometry3D* imageGeometry = imageTimeGeometry->GetGeometryForTimeStep(time);
+    imageGeometry->TransferItkToVtkTransform();
+    transform->Concatenate(imageGeometry->GetVtkTransform()->GetLinearInverse());
+    move->SetTransform(transform);
+
+    vtkSmartPointer<vtkPolyDataNormals> normalsFilter = vtkPolyDataNormals::New();
+    normalsFilter->SetFeatureAngle(50);
+    normalsFilter->SetConsistency(1);
+    normalsFilter->SetSplitting(1);
+    normalsFilter->SetFlipNormals(0);
+    normalsFilter->ReleaseDataFlagOn();
+
+    normalsFilter->SetInputConnection(move->GetOutputPort());
+
+    vtkSmartPointer<vtkPolyDataToImageStencil> surfaceConverter = vtkPolyDataToImageStencil::New();
+    surfaceConverter->SetTolerance( 0.0 );
+    surfaceConverter->ReleaseDataFlagOn();
+
+    surfaceConverter->SetInputConnection( normalsFilter->GetOutputPort() );
+
+    vtkImageData *image = m_MakeOutputBinary
+        ? binaryImage->GetVtkImageData()
+        : const_cast<mitk::Image *>(this->GetImage())->GetVtkImageData(time);
+
+    // Create stencil and use numerical minimum of pixel type as background value
+    vtkSmartPointer<vtkImageStencil> stencil = vtkImageStencil::New();
+    stencil->SetInputData(image);
+    stencil->ReverseStencilOff();
+    stencil->ReleaseDataFlagOn();
+    stencil->SetStencilConnection(surfaceConverter->GetOutputPort());
+
+    stencil->SetBackgroundValue(m_MakeOutputBinary ? 0 : m_BackgroundValue);
+    stencil->Update();
+
+    output->SetVolume( stencil->GetOutput()->GetScalarPointer(), time );
+    MITK_INFO << "stencil ref count: " << stencil->GetReferenceCount() << std::endl;
+  }
+  else
+  {
+    memset( accessor.GetData(), 0, size );
+    output->SetVolume(accessor.GetData(),time);
+  }
+
 }
 
 

@@ -97,11 +97,11 @@ int main(int argc, char **argv)
     qmlRegisterType<QmlMitkRenderWindowItem>("QmlMitk", 1, 0, "QmlMitkRenderWindowItem");
     qmlRegisterType<QmlMitkFourRenderWindowWidget>("QmlMitk", 1, 0, "QmlMitkFourRenderWindowWidget");
     QQuickView view;
-    
+
     view.setSource(QUrl("qrc:///MITK/Examples/QuickRender/QuickRender.qml"));
     view.setResizeMode( QQuickView::SizeRootObjectToView );
 
-    
+
     QQuickItem* root = view.rootObject();
     SetupRenderWindowItems( root, dataStorage );
 

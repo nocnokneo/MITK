@@ -19,6 +19,9 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkImageAccessByItk.h"
 #include "mitkImageDataItem.h"
 #include "mitkContourUtils.h"
+#include "mitkLegacyAdaptors.h"
+
+#include <mitkContourModelUtils.h>
 
 mitk::CorrectorAlgorithm::CorrectorAlgorithm()
 :ImageToImageFilter()
@@ -47,12 +50,12 @@ void mitk::CorrectorAlgorithm::GenerateData()
   // copy the input (since m_WorkingImage will be changed later)
   m_WorkingImage = inputImage;
 
-  TimeSlicedGeometry::Pointer originalGeometry;
+  TimeGeometry::Pointer originalGeometry = NULL;
 
-  if (inputImage->GetTimeSlicedGeometry() )
+  if (inputImage->GetTimeGeometry() )
   {
-    originalGeometry = inputImage->GetTimeSlicedGeometry()->Clone();
-    m_WorkingImage->SetGeometry( originalGeometry );
+    originalGeometry = inputImage->GetTimeGeometry()->Clone();
+    m_WorkingImage->SetTimeGeometry( originalGeometry );
   }
   else
   {
@@ -85,21 +88,8 @@ void mitk::CorrectorAlgorithm::GenerateData()
   CastToIpPicDescriptor( temporarySlice, temporarySlicePic );
   TobiasHeimannCorrectionAlgorithm( temporarySlicePic );
 
-  temporarySlice->SetGeometry(originalGeometry);
+  temporarySlice->SetTimeGeometry(originalGeometry);
 
-  // temporarySlice is our return value (user  can get it by calling GetOutput() )
-
-//  CalculateDifferenceImage( temporarySlice, inputImage );
-//  if ( m_DifferenceImage.IsNotNull() && inputImage->GetTimeSlicedGeometry() )
-//  {
-//    AffineGeometryFrame3D::Pointer originalGeometryAGF = inputImage->GetTimeSlicedGeometry()->Clone();
-//    TimeSlicedGeometry::Pointer originalGeometry = dynamic_cast<TimeSlicedGeometry*>( originalGeometryAGF.GetPointer() );
-//    m_DifferenceImage->SetGeometry( originalGeometry );
-//  }
-//  else
-//  {
-//    itkExceptionMacro("Original image does not have a 'Time sliced geometry'! Cannot copy.");
-//  }
 }
 
 void mitk::CorrectorAlgorithm::TobiasHeimannCorrectionAlgorithm(mitkIpPicDescriptor* pic)
@@ -138,8 +128,7 @@ The algorithm is described in full length in Tobias Heimann's diploma thesis
   segData.reserve( 16 );
 
 
-  ContourUtils::Pointer contourUtils = ContourUtils::New();
-  ContourModel::Pointer projectedContour = contourUtils->ProjectContourTo2DSlice( m_WorkingImage, m_Contour, true, false );
+  ContourModel::Pointer projectedContour = mitk::ContourModelUtils::ProjectContourTo2DSlice( m_WorkingImage, m_Contour, true, false );
 
   if (projectedContour.IsNull())
   {
@@ -311,8 +300,7 @@ The algorithm is described in full length in Tobias Heimann's diploma thesis
 
     free(contourPoints);
 
-    ContourUtils::Pointer contourUtils = ContourUtils::New();
-    contourUtils->FillContourInSlice( contourInImageIndexCoordinates, m_WorkingImage );
+    mitk::ContourModelUtils::FillContourInSlice( contourInImageIndexCoordinates, m_WorkingImage );
   }
 
   delete[] _ofsArray;

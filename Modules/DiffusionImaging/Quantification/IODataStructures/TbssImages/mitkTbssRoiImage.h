@@ -21,7 +21,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkImage.h"
 #include "itkImage.h"
 #include "mitkImageCast.h"
-#include "QuantificationExports.h"
+#include "MitkQuantificationExports.h"
 
 namespace mitk
 {
@@ -31,17 +31,18 @@ namespace mitk
   * yet supported by mitkImage)
   */
 
-  class Quantification_EXPORT TbssRoiImage : public Image
+  class MitkQuantification_EXPORT TbssRoiImage : public Image
   {
 
   public:
 
-    typedef itk::Image<char, 3>  ImageType;
+    typedef itk::Image<unsigned char, 3>  ImageType;
     typedef itk::Index<3> IndexType;
     //typedef typename std::vector <Index<3> > RoiType;
 
     mitkClassMacro( TbssRoiImage, Image )
-    itkNewMacro(Self)
+    itkFactorylessNewMacro(Self)
+    itkCloneMacro(Self)
 
 
     //void SetRequestedRegionToLargestPossibleRegion();

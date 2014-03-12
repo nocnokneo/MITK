@@ -13,28 +13,37 @@ A PARTICULAR PURPOSE.
 See LICENSE.txt or http://www.mitk.org for details.
 
 ===================================================================*/
-
-
 #ifndef MITKLookupTable_H_HEADER_INCLUDED_C1EBD53D
 #define MITKLookupTable_H_HEADER_INCLUDED_C1EBD53D
 
-#include <MitkExports.h>
 #include <mitkCommon.h>
-#include "vtkLookupTable.h"
+#include <MitkCoreExports.h>
+
 #include <itkDataObject.h>
 #include <itkObjectFactory.h>
+
+#include <vtkLookupTable.h>
+#include <vtkSmartPointer.h>
+
 
 class vtkColorTransferFunction;
 class vtkPiecewiseFunction;
 
 namespace mitk
 {
-
-//##
-//##Documentation
-//## @brief LookupTable containing a vtkLookupTable
-//## @ingroup Data
-//##
+/**
+ * @brief The LookupTable class mitk wrapper for a vtkLookupTable
+ * @ingroup DataManagement
+ *
+ * This class can be used to color images with a LookupTable, such as the
+ * vtkLookupTable.
+ * @note If you want to use this as a property for an mitk::Image, make sure
+ * to use the mitk::LookupTableProperty and set the mitk::RenderingModeProperty
+ * to a mode which supports lookup tables (e.g. LOOKUPTABLE_COLOR). Make
+ * sure to check the documentation of the mitk::RenderingModeProperty. For a
+ * code example how to use the mitk::LookupTable check the
+ * mitkImageVtkMapper2DLookupTableTest.cpp in Core\Code\Testing.
+ */
 class MITK_CORE_EXPORT LookupTable : public itk::DataObject
 {
 public:
@@ -45,20 +54,32 @@ public:
 
     mitkClassMacro( LookupTable, itk::DataObject );
 
-    itkNewMacro( Self );
+    itkFactorylessNewMacro(Self)
+    itkCloneMacro(Self)
 
     /**
      * @returns the associated vtkLookupTable
      */
-    virtual vtkLookupTable* GetVtkLookupTable() const;
+    virtual vtkSmartPointer<vtkLookupTable> GetVtkLookupTable() const;
 
     virtual RawLookupTableType * GetRawLookupTable() const;
 
-    virtual void SetVtkLookupTable( vtkLookupTable* lut );
+    virtual void SetVtkLookupTable( vtkSmartPointer<vtkLookupTable> lut );
 
     virtual void ChangeOpacityForAll( float opacity );
 
     virtual void ChangeOpacity(int index, float opacity );
+
+    virtual void GetColor(int, double rgb[3]);
+
+    virtual void GetTableValue(int, double rgba[4]);
+
+    virtual void SetTableValue(int, double rgba[4]);
+
+
+    itkSetMacro(Window, float);
+    itkSetMacro(Level, float);
+    itkSetMacro(Opacity, float);
 
 
     /*!
@@ -112,26 +133,84 @@ public:
 
     LookupTable();
     virtual ~LookupTable();
+    /**
+     * \deprecatedSince{2014_03} Please use CreateColorTransferFunction() instead
+     */
+   DEPRECATED(void CreateColorTransferFunction(vtkColorTransferFunction*& colorFunction));
+   /**
+    * \deprecatedSince{2014_03} Please use CreateOpacityTransferFunction() instead
+    */
+  DEPRECATED(void CreateOpacityTransferFunction(vtkPiecewiseFunction*& opacityFunction));
+  /**
+   * \deprecatedSince{2014_03} Please use CreateGradientTransferFunction() instead
+   */
+ DEPRECATED(void CreateGradientTransferFunction(vtkPiecewiseFunction*& gradientFunction));
 
-    void CreateColorTransferFunction(vtkColorTransferFunction*& colorFunction);
-    void CreateOpacityTransferFunction(vtkPiecewiseFunction*& opacityFunction);
-    void CreateGradientTransferFunction(vtkPiecewiseFunction*& gradientFunction);
+    vtkSmartPointer<vtkColorTransferFunction> CreateColorTransferFunction();
+    vtkSmartPointer<vtkPiecewiseFunction> CreateOpacityTransferFunction();
+    vtkSmartPointer<vtkPiecewiseFunction> CreateGradientTransferFunction();
 
+    enum LookupTableType
+    {
+       GRAYSCALE,
+       INVERSE_GRAYSCALE,
+       HOT_IRON,
+       JET,
+       LEGACY_BINARY,
+       MULTILABEL,
+       PET_COLOR,
+       PET_20
+    };
+
+    static const char* const typenameList[];
+
+    /*!
+     *  \brief Set the look-up table type by enum (or integer).
+     *  \details Returns if the given type doesn't exist. Only changes the type if it is different
+     *           from the current one.
+     */
+    virtual void SetType(const LookupTableType type);
+
+    /*!
+     *  \brief Set the look-up table type by string.
+     *  \details Returns if the given type doesn't exist. Only changes the type if it is different
+     *           from the current one.
+     */
+    virtual void SetType(const std::string& typeName);
+
+    /*!
+     *  \brief Return the current look-up table type as a string.
+     */
+    virtual const std::string GetActiveTypeAsString();
 protected:
 
     void PrintSelf(std::ostream &os, itk::Indent indent) const;
 
     LookupTable(const LookupTable& other);
 
-    vtkLookupTable* m_LookupTable;
+    virtual void BuildGrayScaleLookupTable();
+    virtual void BuildLegacyBinaryLookupTable();
+    virtual void BuildInverseGrayScaleLookupTable();
+    virtual void BuildHotIronLookupTable();
+    virtual void BuildJetLookupTable();
+    virtual void BuildPETColorLookupTable();
+    virtual void BuildPET20LookupTable();
+    virtual void BuildMultiLabelLookupTable();
+
+    vtkSmartPointer<vtkLookupTable> m_LookupTable;
+
+    float m_Window;
+
+    float m_Level;
+
+    float m_Opacity;
+
+    LookupTableType m_type;
 
 private:
 
     virtual itk::LightObject::Pointer InternalClone() const;
 };
-
 } // namespace mitk
-
-
 
 #endif /* LookupTable_H_HEADER_INCLUDED_C1EBD53D */

@@ -74,7 +74,7 @@ mitk::ContourModelWriter::ContourModelWriter()
     : m_FileName(""), m_FilePrefix(""), m_FilePattern("")
 {
     this->SetNumberOfRequiredInputs( 1 );
-    this->SetNumberOfOutputs( 1 );
+    this->SetNumberOfIndexedOutputs( 1 );
     this->SetNthOutput( 0, mitk::ContourModel::New().GetPointer() );
     m_Indent = 2;
     m_IndentDepth = 0;
@@ -121,27 +121,7 @@ void mitk::ContourModelWriter::GenerateData()
 
     /*++++ <?xml version="1.0" encoding="utf-8"?> ++++*/
     WriteXMLHeader( out );
-    /*++++ <contourModel> ++++*/
-    WriteStartElement( XML_CONTOURMODEL, out );
 
-    /*++++ <head> ++++*/
-    WriteStartElement( XML_HEAD, out);
-
-    /*++++ <geometryInfo> ++++*/
-    WriteStartElement( XML_GEOMETRY_INFO, out);
-
-
-    //write the geometry informations to the stream
-      InputType::Pointer contourModel = this->GetInput();
-      assert( contourModel.IsNotNull() );
-      WriteGeometryInformation( contourModel->GetTimeSlicedGeometry(), out);;
-
-
-    /*++++ </geometryInfo> ++++*/
-    WriteEndElement( XML_GEOMETRY_INFO, out);
-
-    /*++++ </head> ++++*/
-    WriteEndElement( XML_HEAD, out);
 
     //
     // for each input object write its xml representation to
@@ -155,16 +135,12 @@ void mitk::ContourModelWriter::GenerateData()
     }
 
 
-    /*++++ </contourModel> ++++*/
-    WriteEndElement( XML_CONTOURMODEL, out );
-
-
     out.imbue(previousLocale);
 
     if ( !out.good() ) // some error during output
     {
       out.close();
-      throw std::ios_base::failure("Some error during point set writing.");
+      throw std::ios_base::failure("Some error during contour writing.");
     }
 
     out.close();
@@ -177,6 +153,23 @@ void mitk::ContourModelWriter::GenerateData()
 
 void mitk::ContourModelWriter::WriteXML( mitk::ContourModel* contourModel, std::ofstream& out )
 {
+   /*++++ <contourModel> ++++*/
+    WriteStartElement( XML_CONTOURMODEL, out );
+
+    /*++++ <head> ++++*/
+    WriteStartElement( XML_HEAD, out);
+
+    /*++++ <geometryInfo> ++++*/
+    WriteStartElement( XML_GEOMETRY_INFO, out);
+
+    WriteGeometryInformation( contourModel->GetTimeGeometry(), out);;
+
+    /*++++ </geometryInfo> ++++*/
+    WriteEndElement( XML_GEOMETRY_INFO, out);
+
+    /*++++ </head> ++++*/
+    WriteEndElement( XML_HEAD, out);
+
   /*++++ <data> ++++*/
   WriteStartElement( XML_DATA, out);
 
@@ -248,11 +241,14 @@ void mitk::ContourModelWriter::WriteXML( mitk::ContourModel* contourModel, std::
 
   /*++++ </data> ++++*/
   WriteEndElement( XML_DATA, out );
+
+  /*++++ </contourModel> ++++*/
+    WriteEndElement( XML_CONTOURMODEL, out );
 }
 
 
 
-void mitk::ContourModelWriter::WriteGeometryInformation( mitk::TimeSlicedGeometry* geometry, std::ofstream& out )
+void mitk::ContourModelWriter::WriteGeometryInformation( mitk::TimeGeometry* /*geometry*/, std::ofstream& out )
 {
   WriteCharacterData("<!-- geometry information -->", out);
 }
@@ -262,7 +258,7 @@ void mitk::ContourModelWriter::WriteGeometryInformation( mitk::TimeSlicedGeometr
 void mitk::ContourModelWriter::ResizeInputs( const unsigned int& num )
 {
     unsigned int prevNum = this->GetNumberOfInputs();
-    this->SetNumberOfInputs( num );
+    this->SetNumberOfIndexedInputs( num );
     for ( unsigned int i = prevNum; i < num; ++i )
     {
         this->SetNthInput( i, mitk::ContourModel::New().GetPointer() );

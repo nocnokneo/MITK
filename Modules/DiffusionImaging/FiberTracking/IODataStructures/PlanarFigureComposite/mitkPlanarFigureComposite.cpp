@@ -37,6 +37,15 @@ mitk::PlanarFigureComposite::~PlanarFigureComposite()
 
 }
 
+mitk::PlanarFigureComposite::PlanarFigureComposite(const Self& other)
+  : PlanarFigure(other),
+    m_PFVector(other.m_PFVector->Clone()),
+    m_compOperation(other.m_compOperation),
+    m_DNVector(other.m_DNVector->Clone()),
+    m_name(other.m_name)
+{
+}
+
 void mitk::PlanarFigureComposite::addDataNode(mitk::DataNode::Pointer dnode)
 {
 
@@ -108,7 +117,7 @@ mitk::DataNode::Pointer mitk::PlanarFigureComposite::getDataNodeAt(int idx)
 
 
 //musthave implementations from superclass.... not sure if return true makes sense
-bool mitk::PlanarFigureComposite::SetControlPoint( unsigned int index, const Point2D &point, bool createIfDoesNotExist )
+bool mitk::PlanarFigureComposite::SetControlPoint( unsigned int , const Point2D &, bool  )
 {
   return true;
 }
@@ -128,7 +137,7 @@ void mitk::PlanarFigureComposite::EvaluateFeaturesInternal()
 
 }
 
-void mitk::PlanarFigureComposite::PrintSelf( std::ostream& os, itk::Indent indent) const
+void mitk::PlanarFigureComposite::PrintSelf( std::ostream&, itk::Indent) const
 {
 
 }

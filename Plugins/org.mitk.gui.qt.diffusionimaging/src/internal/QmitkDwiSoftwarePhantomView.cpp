@@ -251,7 +251,7 @@ void QmitkDwiSoftwarePhantomView::GeneratePhantom()
 
     mitk::DiffusionImage<short>::Pointer image = mitk::DiffusionImage<short>::New();
     image->SetVectorImage( filter->GetOutput() );
-    image->SetB_Value(bVal);
+    image->SetReferenceBValue(bVal);
     image->SetDirections(gradientList);
     image->InitializeFromVectorImage();
     mitk::DataNode::Pointer node = mitk::DataNode::New();
@@ -263,7 +263,7 @@ void QmitkDwiSoftwarePhantomView::GeneratePhantom()
     if (basedata.IsNotNull())
     {
         mitk::RenderingManager::GetInstance()->InitializeViews(
-                    basedata->GetTimeSlicedGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
+                    basedata->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
         mitk::RenderingManager::GetInstance()->RequestUpdateAll();
     }
 

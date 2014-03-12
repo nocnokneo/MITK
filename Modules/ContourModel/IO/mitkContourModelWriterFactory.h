@@ -16,14 +16,14 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef CONTOURMODELWRITERFACTORY_H_HEADER_INCLUDED
 #define CONTOURMODELWRITERFACTORY_H_HEADER_INCLUDED
 
-#include "ContourModelExports.h"
+#include <MitkContourModelExports.h>
 #include "itkObjectFactoryBase.h"
 #include "mitkBaseData.h"
 
 namespace mitk
 {
 
-  class ContourModel_EXPORT ContourModelWriterFactory : public itk::ObjectFactoryBase
+  class MitkContourModel_EXPORT ContourModelWriterFactory : public itk::ObjectFactoryBase
   {
   public:
 
@@ -36,11 +36,17 @@ namespace mitk
     /** Method for class instantiation. */
     itkFactorylessNewMacro(Self);
 
-    /** Register one factory of this type  */
-    static void RegisterOneFactory(void);
+    /**
+     * Register one factory of this type
+     * \deprecatedSince{2013_09}
+     */
+    DEPRECATED(static void RegisterOneFactory(void));
 
-    /** UnRegister one factory of this type  */
-    static void UnRegisterOneFactory(void);
+    /**
+     * UnRegister one factory of this type
+     * \deprecatedSince{2013_09}
+     */
+    DEPRECATED(static void UnRegisterOneFactory(void));
 
 
   protected:

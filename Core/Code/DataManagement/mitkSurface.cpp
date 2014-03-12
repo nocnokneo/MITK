@@ -20,7 +20,6 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include <algorithm>
 #include <vtkPolyData.h>
-#include <mitkTesting.h>
 
 static vtkPolyData* DeepCopy(vtkPolyData* other)
 {
@@ -39,10 +38,10 @@ static void Delete(vtkPolyData* polyData)
     polyData->Delete();
 }
 
-static void Update(vtkPolyData* polyData)
+static void Update(vtkPolyData* /*polyData*/)
 {
-  if (polyData != NULL)
-    polyData->Update();
+//  if (polyData != NULL)
+//    polyData->Update(); //VTK6_TODO vtk pipeline
 }
 
 mitk::Surface::Surface()
@@ -100,7 +99,7 @@ void mitk::Surface::ClearData()
 const mitk::Surface::RegionType& mitk::Surface::GetLargestPossibleRegion() const
 {
   m_LargestPossibleRegion.SetIndex(3, 0);
-  m_LargestPossibleRegion.SetSize(3, GetTimeSlicedGeometry()->GetTimeSteps());
+  m_LargestPossibleRegion.SetSize(3, GetTimeGeometry()->CountTimeSteps());
 
   return m_LargestPossibleRegion;
 }
@@ -115,7 +114,7 @@ void mitk::Surface::InitializeEmpty()
   if (!m_PolyDatas.empty())
     this->ClearData();
 
-  Superclass::InitializeTimeSlicedGeometry();
+  Superclass::InitializeTimeGeometry();
 
   m_PolyDatas.push_back(NULL);
   m_Initialized = true;
@@ -187,29 +186,29 @@ void mitk::Surface::UpdateOutputInformation()
   if (m_CalculateBoundingBox == true && !m_PolyDatas.empty())
     this->CalculateBoundingBox();
   else
-    this->GetTimeSlicedGeometry()->UpdateInformation();
+    this->GetTimeGeometry()->Update();
 }
 
 void mitk::Surface::CalculateBoundingBox()
 {
-  mitk::TimeSlicedGeometry* timeSlicedGeometry = this->GetTimeSlicedGeometry();
+  TimeGeometry* timeGeometry = this->GetTimeGeometry();
 
-  if (timeSlicedGeometry->GetTimeSteps() != m_PolyDatas.size())
+  if (timeGeometry->CountTimeSteps() != m_PolyDatas.size())
     mitkThrow() << "Number of geometry time steps is inconsistent with number of poly data pointers.";
 
   for (unsigned int i = 0; i < m_PolyDatas.size(); ++i)
   {
     vtkPolyData* polyData = m_PolyDatas[i];
-    vtkFloatingPointType bounds[6] = {0};
+    double bounds[6] = {0};
 
     if (polyData != NULL && polyData->GetNumberOfPoints() > 0)
     {
-      polyData->Update();
+//      polyData->Update(); //VTK6_TODO vtk pipeline
       polyData->ComputeBounds();
       polyData->GetBounds(bounds);
     }
 
-    mitk::Geometry3D::Pointer geometry = timeSlicedGeometry->GetGeometry3D(i);
+    Geometry3D::Pointer geometry = timeGeometry->GetGeometryForTimeStep(i);
 
     if (geometry.IsNull())
       mitkThrow() << "Time-sliced geometry is invalid (equals NULL).";
@@ -217,7 +216,7 @@ void mitk::Surface::CalculateBoundingBox()
     geometry->SetFloatBounds(bounds);
   }
 
-  timeSlicedGeometry->UpdateInformation();
+  timeGeometry->Update();
   m_CalculateBoundingBox = false;
 }
 
@@ -388,55 +387,48 @@ void mitk::Surface::PrintSelf(std::ostream& os, itk::Indent indent) const
 
 bool mitk::Equal( vtkPolyData* leftHandSide, vtkPolyData* rightHandSide, mitk::ScalarType eps, bool verbose )
 {
+  if(( leftHandSide == NULL ) || ( rightHandSide == NULL ))
+  {
+    MITK_ERROR << "mitk::Equal( vtkPolyData* leftHandSide, vtkPolyData* rightHandSide, mitk::ScalarType eps, bool verbose ) does not work for NULL pointer input.";
+    return false;
+  }
+  return Equal( *leftHandSide, *rightHandSide, eps, verbose);
+}
+
+
+bool mitk::Equal( vtkPolyData& leftHandSide, vtkPolyData& rightHandSide, mitk::ScalarType eps, bool verbose )
+{
   bool noDifferenceFound = true;
 
-  if( rightHandSide == NULL )
-  {
-    if(verbose)
-    {
-      MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] rightHandSide NULL.";
-    }
-    return false;
-  }
-
-  if( leftHandSide == NULL )
-  {
-    if(verbose)
-    {
-      MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] leftHandSide NULL.";
-    }
-    return false;
-  }
-
-  if( ! mitk::Equal( leftHandSide->GetNumberOfCells(), rightHandSide->GetNumberOfCells(), eps, verbose ) )
+  if( ! mitk::Equal( leftHandSide.GetNumberOfCells(), rightHandSide.GetNumberOfCells(), eps, verbose ) )
   {
     if(verbose)
       MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] Number of cells not equal";
     noDifferenceFound = false;
   }
 
-  if( ! mitk::Equal( leftHandSide->GetNumberOfVerts(), rightHandSide->GetNumberOfVerts(), eps, verbose ))
+  if( ! mitk::Equal( leftHandSide.GetNumberOfVerts(), rightHandSide.GetNumberOfVerts(), eps, verbose ))
   {
     if(verbose)
       MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] Number of vertices not equal";
     noDifferenceFound = false;
   }
 
-  if( ! mitk::Equal( leftHandSide->GetNumberOfLines(), rightHandSide->GetNumberOfLines(), eps, verbose ) )
+  if( ! mitk::Equal( leftHandSide.GetNumberOfLines(), rightHandSide.GetNumberOfLines(), eps, verbose ) )
   {
     if(verbose)
       MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] Number of lines not equal";
     noDifferenceFound = false;
   }
 
-  if( ! mitk::Equal( leftHandSide->GetNumberOfPolys(), rightHandSide->GetNumberOfPolys(), eps, verbose ) )
+  if( ! mitk::Equal( leftHandSide.GetNumberOfPolys(), rightHandSide.GetNumberOfPolys(), eps, verbose ) )
   {
     if(verbose)
       MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] Number of polys not equal";
     noDifferenceFound = false;
   }
 
-  if( ! mitk::Equal( leftHandSide->GetNumberOfStrips(), rightHandSide->GetNumberOfStrips(), eps, verbose ) )
+  if( ! mitk::Equal( leftHandSide.GetNumberOfStrips(), rightHandSide.GetNumberOfStrips(), eps, verbose ) )
   {
     if(verbose)
       MITK_INFO << "[Equal( vtkPolyData*, vtkPolyData* )] Number of strips not equal";
@@ -444,8 +436,8 @@ bool mitk::Equal( vtkPolyData* leftHandSide, vtkPolyData* rightHandSide, mitk::S
   }
 
   {
-    unsigned int numberOfPointsRight = rightHandSide->GetPoints()->GetNumberOfPoints();
-    unsigned int numberOfPointsLeft = leftHandSide->GetPoints()->GetNumberOfPoints();
+    unsigned int numberOfPointsRight = rightHandSide.GetPoints()->GetNumberOfPoints();
+    unsigned int numberOfPointsLeft = leftHandSide.GetPoints()->GetNumberOfPoints();
     if(! mitk::Equal( numberOfPointsLeft, numberOfPointsRight, eps, verbose ))
     {
       if(verbose)
@@ -458,12 +450,12 @@ bool mitk::Equal( vtkPolyData* leftHandSide, vtkPolyData* rightHandSide, mitk::S
       {
         bool pointFound = false;
         double pointOne[3];
-        rightHandSide->GetPoints()->GetPoint(i, pointOne);
+        rightHandSide.GetPoints()->GetPoint(i, pointOne);
 
         for( unsigned int j( 0 ); j < numberOfPointsLeft; j++ )
         {
           double pointTwo[3];
-          leftHandSide->GetPoints()->GetPoint(j, pointTwo);
+          leftHandSide.GetPoints()->GetPoint(j, pointTwo);
 
           double x = pointOne[0] - pointTwo[0];
           double y = pointOne[1] - pointTwo[1];
@@ -496,42 +488,40 @@ bool mitk::Equal( vtkPolyData* leftHandSide, vtkPolyData* rightHandSide, mitk::S
 
 bool mitk::Equal( mitk::Surface* leftHandSide, mitk::Surface* rightHandSide, mitk::ScalarType eps, bool verbose )
 {
+  if(( leftHandSide == NULL ) || ( rightHandSide == NULL ))
+  {
+    MITK_ERROR << "mitk::Equal( mitk::Surface* leftHandSide, mitk::Surface* rightHandSide, mitk::ScalarType eps, bool verbose ) does not work with NULL pointer input.";
+    return false;
+  }
+  return Equal( *leftHandSide, *rightHandSide, eps, verbose);
+}
+
+
+bool mitk::Equal( mitk::Surface& leftHandSide, mitk::Surface& rightHandSide, mitk::ScalarType eps, bool verbose )
+{
   bool noDifferenceFound = true;
 
-  if( rightHandSide == NULL )
+  if( ! mitk::Equal( leftHandSide.GetSizeOfPolyDataSeries(), rightHandSide.GetSizeOfPolyDataSeries(), eps, verbose ) )
   {
     if(verbose)
-      MITK_INFO << "[Equal( mitk::surface*, mitk::surface* )] rightHandSide NULL.";
+      MITK_INFO << "[Equal( mitk::surface&, mitk::surface& )] Size of PolyData series not equal.";
     return false;
   }
 
-  if( leftHandSide == NULL )
-  {
-    if(verbose)
-      MITK_INFO << "[Equal( mitk::surface*, mitk::surface* )] leftHandSide NULL.";
-    return false;
-  }
+  // No mitk::Equal for TimeGeometry implemented.
+  //if( ! mitk::Equal( leftHandSide->GetTimeGeometry(), rightHandSide->GetTimeGeometry(), eps, verbose ) )
+  //{
+  //  if(verbose)
+  //    MITK_INFO << "[Equal( mitk::surface&, mitk::surface& )] Time sliced geometries not equal";
+  //  noDifferenceFound = false;
+  //}
 
-  if( ! mitk::Equal( leftHandSide->GetSizeOfPolyDataSeries(), rightHandSide->GetSizeOfPolyDataSeries(), eps, verbose ) )
+  for( unsigned int i( 0 ); i < rightHandSide.GetSizeOfPolyDataSeries(); i++ )
   {
-    if(verbose)
-      MITK_INFO << "[Equal( mitk::surface*, mitk::surface* )] Size of PolyData series not equal.";
-    noDifferenceFound = false;
-  }
-
-  if( ! mitk::Equal( leftHandSide->GetTimeSlicedGeometry(), rightHandSide->GetTimeSlicedGeometry(), eps, verbose ) )
-  {
-    if(verbose)
-      MITK_INFO << "[Equal( mitk::surface*, mitk::surface* )] Time sliced geometries not equal";
-    noDifferenceFound = false;
-  }
-
-  for( unsigned int i( 0 ); i < rightHandSide->GetSizeOfPolyDataSeries(); i++ )
-  {
-    if( ! mitk::Equal( leftHandSide->GetVtkPolyData( i ), rightHandSide->GetVtkPolyData( i ), eps, verbose ) )
+    if( ! mitk::Equal( *leftHandSide.GetVtkPolyData( i ), *rightHandSide.GetVtkPolyData( i ), eps, verbose ) )
     {
       if(verbose)
-        MITK_INFO << "[Equal( mitk::surface*, mitk::surface* )] Poly datas not equal.";
+        MITK_INFO << "[Equal( mitk::surface&, mitk::surface& )] Poly datas not equal.";
       noDifferenceFound = false;
     }
   }

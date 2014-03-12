@@ -42,9 +42,9 @@ void mitk::ContourModelToPointSetFilter::GenerateData()
   unsigned int pointId = 0;
 
 
-  unsigned int timestep = inputContour->GetTimeSteps();
+  std::size_t timestep = inputContour->GetTimeSteps();
 
-  for ( int i = 0; i < timestep; i++)
+  for ( std::size_t i = 0; i < timestep; i++)
   {
 
 
@@ -52,7 +52,7 @@ void mitk::ContourModelToPointSetFilter::GenerateData()
     {
       mitk::Point3D p = (*it)->Coordinates;
       mitk::PointOperation popInsert( mitk::OpINSERT,
-                                      inputContour->GetTimeSlicedGeometry()->TimeStepToMS(timestep),
+                                      inputContour->GetTimeGeometry()->TimeStepToTimePoint(timestep),
                                       p,
                                       pointId++,
                                       false );

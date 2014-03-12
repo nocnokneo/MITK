@@ -171,7 +171,7 @@ void QmitkStochasticFiberTrackingView::DoFiberTracking()
         {  //set 0-Gradient to bValue 0
             vecCont->InsertElement(i,0);
         }else{
-            vecCont->InsertElement(i,m_DiffusionImage->GetB_Value());
+            vecCont->InsertElement(i,m_DiffusionImage->GetReferenceBValue());
         }
     }
 
@@ -276,6 +276,7 @@ void QmitkStochasticFiberTrackingView::DoFiberTracking()
     fiberPolyData->SetLines(vCellArray);
 
     mitk::FiberBundleX::Pointer fib = mitk::FiberBundleX::New(fiberPolyData);
+    fib->SetReferenceImage(dynamic_cast<mitk::Image*>(m_DiffusionImageNode->GetData()));
     mitk::DataNode::Pointer fbNode = mitk::DataNode::New();
     fbNode->SetData(fib);
     QString name("FiberBundle_");

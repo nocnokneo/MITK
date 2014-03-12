@@ -17,7 +17,7 @@
 
 #include <QMutex>
 
-#include "OpenViewCoreExports.h"
+#include <MitkOpenViewCoreExports.h>
 
 class QOpenGLContext;
 class QOpenGLFramebufferObject;

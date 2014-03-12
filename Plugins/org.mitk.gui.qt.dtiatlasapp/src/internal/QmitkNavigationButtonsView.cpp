@@ -291,7 +291,7 @@ void QmitkNavigationButtonsView::Reinit()
     if (basedata.IsNotNull())
     {
       mitk::RenderingManager::GetInstance()->InitializeViews(
-          basedata->GetTimeSlicedGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
+          basedata->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
       mitk::RenderingManager::GetInstance()->RequestUpdateAll();
     }
   }
@@ -755,7 +755,7 @@ void QmitkNavigationButtonsView::PlanarFigureFocus()
     if(figureInteractor.IsNull())
     {
       figureInteractor = mitk::PlanarFigureInteractor::New();
-      mitk::Module* planarFigureModule = mitk::ModuleRegistry::GetModule( "PlanarFigure" );
+      mitk::Module* planarFigureModule = mitk::ModuleRegistry::GetModule( "MitkPlanarFigure" );
       figureInteractor->LoadStateMachine("PlanarFigureInteraction.xml", planarFigureModule );
       figureInteractor->SetEventConfig( "PlanarFigureConfig.xml", planarFigureModule );
       figureInteractor->SetDataNode( m_SelectedNode );

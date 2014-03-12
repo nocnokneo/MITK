@@ -1331,6 +1331,14 @@ void QmitkPartialVolumeAnalysisView::UpdateStatistics()
             mitk::PixelType pixelType = m_SelectedImageMask->GetPixelType();
             MITK_DEBUG << pixelType.GetPixelTypeAsString();
 
+
+            if(pixelType.GetComponentTypeAsString() == "char")
+            {
+                MITK_DEBUG << "Pixel type is char instead of uchar";
+                return;
+            }
+
+
             if(pixelType.GetBitsPerComponent() == 16)
             {
                 //convert from short to uchar
@@ -1351,6 +1359,7 @@ void QmitkPartialVolumeAnalysisView::UpdateStatistics()
 
                 mitk::CastToMitkImage(charImage, m_SelectedImageMask);
             }
+
 
             m_CurrentStatisticsCalculator->SetImageMask( m_SelectedImageMask );
 
@@ -1866,7 +1875,7 @@ void QmitkPartialVolumeAnalysisView::Activated()
           if(figureInteractor.IsNull())
           {
             figureInteractor = mitk::PlanarFigureInteractor::New();
-            us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "PlanarFigure" );
+            us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "MitkPlanarFigure" );
             figureInteractor->LoadStateMachine("PlanarFigureInteraction.xml", planarFigureModule );
             figureInteractor->SetEventConfig( "PlanarFigureConfig.xml", planarFigureModule );
             figureInteractor->SetDataNode( node );
@@ -2122,7 +2131,7 @@ void QmitkPartialVolumeAnalysisView::NodeAddedInDataStorage(const mitk::DataNode
         if(figureInteractor.IsNull())
         {
           figureInteractor = mitk::PlanarFigureInteractor::New();
-          us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "PlanarFigure" );
+          us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "MitkPlanarFigure" );
           figureInteractor->LoadStateMachine("PlanarFigureInteraction.xml", planarFigureModule );
           figureInteractor->SetEventConfig( "PlanarFigureConfig.xml", planarFigureModule );
           figureInteractor->SetDataNode( nonConstNode );

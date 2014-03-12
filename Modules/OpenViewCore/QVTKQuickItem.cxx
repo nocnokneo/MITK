@@ -317,11 +317,11 @@ void QVTKQuickItem::init()
 void QVTKQuickItem::prepareForRender()
 {
 }
-  
+
 void QVTKQuickItem::cleanupAfterRender()
 {
 }
-  
+
 QSGNode* QVTKQuickItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
 {
   QSGSimpleRectNode *n = static_cast<QSGSimpleRectNode *>(oldNode);

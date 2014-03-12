@@ -31,11 +31,6 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <iostream>
 #include <fstream>
 
-
-#include <QMessageBox>
-
-
-
 using namespace std;
 
 namespace mitk {
@@ -46,21 +41,19 @@ namespace mitk {
   void TractAnalyzer::MakeRoi()
   {
 
+    m_CostSum = 0.0;
+
     int n = 0;
     if(m_PointSetNode.IsNotNull())
     {
       n = m_PointSetNode->GetSize();
       if(n==0)
       {
-        QMessageBox msgBox;
-        msgBox.setText("No points have been set yet.");
-        msgBox.exec();
+        mitkThrow() << "No points have been set yet.";
       }
     }
     else{
-      QMessageBox msgBox;
-      msgBox.setText("No points have been set yet.");
-      msgBox.exec();
+      mitkThrow() << "No points have been set yet.";
     }
 
     std::string pathDescription = "";
@@ -192,16 +185,32 @@ namespace mitk {
         ShortestPathFilterType::Pointer pathFinder = ShortestPathFilterType::New();
         pathFinder->SetCostFunction(costFunction);
         pathFinder->SetFullNeighborsMode(true);
+        pathFinder->SetGraph_fullNeighbors(true);
         //pathFinder->SetCalcMode(ShortestPathFilterType::A_STAR);
         pathFinder->SetInput(meanSkeleton);
         pathFinder->SetStartIndex(startPoint);
         pathFinder->SetEndIndex(endPoint);
         pathFinder->Update();
 
+        double segmentCost = 0.0;
+        std::vector< itk::Index<3> > path = pathFinder->GetVectorPath();
+
+        for(unsigned int i=0; i<path.size()-1; i++)
+        {
+            itk::Index<3> ix1 = path[i];
+            itk::Index<3> ix2 = path[i+1];
+
+            segmentCost += costFunction->GetCost(ix1, ix2);
+        }
+
+        m_CostSum += segmentCost;
+
+
         return pathFinder->GetVectorPath();
 
 
       }
+      return std::vector< itk::Index<3> >();
   }
 
 

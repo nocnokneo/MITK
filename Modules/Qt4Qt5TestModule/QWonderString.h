@@ -17,9 +17,9 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef QWonderString_h
 #define QWonderString_h
 
-#include <QtCore>
+#include <QObject>
 
-#include "Qt4Qt5TestModuleExports.h"
+#include "MitkQt4Qt5TestModuleExports.h"
 
 /**
   \brief PURPOSELESS class for testing.
@@ -28,7 +28,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 
   There is nothing here to copy..
 */
-class Qt4Qt5TestModule_EXPORT QWonderString : public QObject
+class MitkQt4Qt5TestModule_EXPORT QWonderString : public QObject
 {
   Q_OBJECT
 

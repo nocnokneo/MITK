@@ -155,14 +155,6 @@ QHash<QString, QmitkRenderWindow *> QmitkStdMultiWidgetEditor::GetQmitkRenderWin
 
 QmitkRenderWindow *QmitkStdMultiWidgetEditor::GetQmitkRenderWindow(const QString &id) const
 {
-  static bool alreadyWarned = false;
-
-  if(!alreadyWarned)
-  {
-    MITK_WARN(id == "transversal") << "QmitkStdMultiWidgetEditor::GetRenderWindow(\"transversal\") is deprecated. Use \"axial\" instead.";
-    alreadyWarned = true;
-  }
-
   if (d->m_RenderWindows.contains(id))
     return d->m_RenderWindows[id];
 
@@ -286,7 +278,6 @@ void QmitkStdMultiWidgetEditor::CreateQtPartControl(QWidget* parent)
 
     d->m_StdMultiWidget = new QmitkStdMultiWidget(parent);
 
-    d->m_RenderWindows.insert("transversal", d->m_StdMultiWidget->GetRenderWindow1());
     d->m_RenderWindows.insert("axial", d->m_StdMultiWidget->GetRenderWindow1());
     d->m_RenderWindows.insert("sagittal", d->m_StdMultiWidget->GetRenderWindow2());
     d->m_RenderWindows.insert("coronal", d->m_StdMultiWidget->GetRenderWindow3());
@@ -305,7 +296,7 @@ void QmitkStdMultiWidgetEditor::CreateQtPartControl(QWidget* parent)
 
     // Initialize views as axial, sagittal, coronar to all data objects in DataStorage
     // (from top-left to bottom)
-    mitk::TimeSlicedGeometry::Pointer geo = ds->ComputeBoundingGeometry3D(ds->GetAll());
+    mitk::TimeGeometry::Pointer geo = ds->ComputeBoundingGeometry3D(ds->GetAll());
     mitk::RenderingManager::GetInstance()->InitializeViews(geo);
 
     // Initialize bottom-right view as 3D view
@@ -416,18 +407,7 @@ void QmitkStdMultiWidgetEditor::OnPreferencesChanged(const berry::IBerryPreferen
 
   mitk::RenderingManager::GetInstance()->SetConstrainedPaddingZooming(constrainedZooming);
 
-  mitk::NodePredicateNot::Pointer pred
-    = mitk::NodePredicateNot::New(mitk::NodePredicateProperty::New("includeInBoundingBox"
-    , mitk::BoolProperty::New(false)));
-
-  mitk::DataStorage::SetOfObjects::ConstPointer rs = this->GetDataStorage()->GetSubset(pred);
-  // calculate bounding geometry of these nodes
-
-  mitk::TimeSlicedGeometry::Pointer bounds = this->GetDataStorage()->ComputeBoundingGeometry3D(rs, "visible");
-
-
-  // initialize the views to the bounding geometry
-  mitk::RenderingManager::GetInstance()->InitializeViews(bounds);
+  mitk::RenderingManager::GetInstance()->InitializeViewsByBoundingObjects(this->GetDataStorage());
 
   mitk::RenderingManager::GetInstance()->RequestUpdateAll();
 

@@ -18,13 +18,13 @@ See LICENSE.txt or http://www.mitk.org for details.
 #define PLANARFIGURE_WRITERFACTORY_H_HEADER_INCLUDED
 
 #include "itkObjectFactoryBase.h"
-#include "PlanarFigureExports.h"
+#include <MitkPlanarFigureExports.h>
 #include "mitkBaseData.h"
 
 namespace mitk
 {
 
-class PlanarFigure_EXPORT PlanarFigureWriterFactory : public itk::ObjectFactoryBase
+class MitkPlanarFigure_EXPORT PlanarFigureWriterFactory : public itk::ObjectFactoryBase
 {
 public:
 
@@ -37,11 +37,17 @@ public:
   /** Method for class instantiation. */
   itkFactorylessNewMacro(Self)
 
-  /** Register one factory of this type  */
-  static void RegisterOneFactory(void);
+  /**
+   * Register one factory of this type
+   * \deprecatedSince{2013_09}
+   */
+  DEPRECATED(static void RegisterOneFactory(void));
 
-  /** UnRegister one factory of this type  */
-  static void UnRegisterOneFactory(void);
+  /**
+   * UnRegister one factory of this type
+   * \deprecatedSince{2013_09}
+   */
+  DEPRECATED(static void UnRegisterOneFactory(void));
 
 protected:
   PlanarFigureWriterFactory();

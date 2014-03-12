@@ -52,7 +52,7 @@ class vtkTDxDevice;
 class vtkTDxUnixDevice;
 #endif
 
-#include "OpenViewCoreExports.h"
+#include <MitkOpenViewCoreExports.h>
 
 class QVTKInteractorInternal;
 

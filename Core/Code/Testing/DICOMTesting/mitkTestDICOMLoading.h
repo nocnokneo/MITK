@@ -18,12 +18,12 @@ See LICENSE.txt or http://www.mitk.org for details.
 
 #include "mitkDicomSeriesReader.h"
 
-#include "mitkDICOMTestingExports.h"
+#include "MitkDICOMTestingExports.h"
 
 namespace mitk
 {
 
-class mitkDICOMTesting_EXPORT TestDICOMLoading
+class MitkDICOMTesting_EXPORT TestDICOMLoading
 {
   public:
 
@@ -86,12 +86,14 @@ class mitkDICOMTesting_EXPORT TestDICOMLoading
     std::string trim(const std::string& pString,
                      const std::string& pWhitespace = " \t");
 
+
+
     template<typename T>
     bool StringToNumber(const std::string& s, T& value)
     {
       std::stringstream stream(s);
       stream >> value;
-      return !stream.fail();
+      return (!stream.fail()) && (fabs(value) < std::numeric_limits<T>::max());
     }
 
     const char* m_PreviousCLocale;

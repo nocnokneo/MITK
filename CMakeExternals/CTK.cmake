@@ -15,7 +15,7 @@ if(MITK_USE_CTK)
 
   if(NOT DEFINED CTK_DIR)
 
-    set(revision_tag f18114d2)
+    set(revision_tag 4cfeaaf7)
     #IF(${proj}_REVISION_TAG)
     #  SET(revision_tag ${${proj}_REVISION_TAG})
     #ENDIF()
@@ -61,7 +61,7 @@ if(MITK_USE_CTK)
       BINARY_DIR ${proj}-build
       PREFIX ${proj}-cmake
       URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/CTK_${revision_tag}.tar.gz
-      URL_MD5 03694d11d206a94284af6801aa9d8b5c
+      URL_MD5 23889893185726547ad1273dc8b63a46
       UPDATE_COMMAND ""
       INSTALL_COMMAND ""
       CMAKE_GENERATOR ${gen}
@@ -76,10 +76,12 @@ if(MITK_USE_CTK)
         -DCTK_LIB_CommandLineModules/Frontend/QtGui:BOOL=ON
         -DCTK_LIB_PluginFramework:BOOL=ON
         -DCTK_LIB_DICOM/Widgets:BOOL=ON
+        -DCTK_LIB_XNAT/Core:BOOL=ON
         -DCTK_PLUGIN_org.commontk.eventadmin:BOOL=ON
         -DCTK_PLUGIN_org.commontk.configadmin:BOOL=ON
         -DCTK_USE_GIT_PROTOCOL:BOOL=OFF
         -DDCMTK_URL:STRING=${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/CTK_DCMTK_085525e6.tar.gz
+        -DqRestAPI_URL:STRING=${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/qRestAPI_0d46f8a6.tar.gz
       DEPENDS ${proj_DEPENDENCIES}
      )
   set(CTK_DIR ${CMAKE_CURRENT_BINARY_DIR}/${proj}-build)

@@ -33,11 +33,10 @@
 
 #include "vtkObject.h"
 #include "vtkCommand.h"  // for event defines
-#include "qobject.h"
+#include <QObject>
 
-#include "OpenViewCoreExports.h"
+#include <MitkOpenViewCoreExports.h>
 
-class QObject;
 class vtkCallbackCommand;
 class vtkEventQtSlotConnect;
 

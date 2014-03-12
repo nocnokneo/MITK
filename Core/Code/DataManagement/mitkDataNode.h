@@ -69,7 +69,7 @@ public:
 
   typedef mitk::Geometry3D::Pointer Geometry3DPointer;
   typedef std::vector< itk::SmartPointer< Mapper > > MapperVector;
-  typedef std::map<const mitk::BaseRenderer*,mitk::PropertyList::Pointer> MapOfPropertyLists;
+  typedef std::map<std::string, mitk::PropertyList::Pointer> MapOfPropertyLists;
   typedef std::set<std::string> GroupTagList;
 
   /**
@@ -80,7 +80,8 @@ public:
 
   mitkClassMacro(DataNode, itk::DataObject);
 
-  itkNewMacro(Self);
+  itkFactorylessNewMacro(Self)
+  itkCloneMacro(Self)
 
   mitk::Mapper* GetMapper(MapperSlotId id) const;
   //##Documentation
@@ -176,6 +177,7 @@ public:
   //## @sa m_PropertyList
   //## @sa m_MapOfPropertyLists
   mitk::PropertyList* GetPropertyList(const mitk::BaseRenderer* renderer = NULL) const;
+  mitk::PropertyList* GetPropertyList(const std::string& rendererName) const;
 
   //##Documentation
   //## @brief Add values from another PropertyList.

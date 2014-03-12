@@ -18,7 +18,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef PLANEGEOMETRY_H_HEADER_INCLUDED_C1C68A2C
 #define PLANEGEOMETRY_H_HEADER_INCLUDED_C1C68A2C
 
-#include <MitkExports.h>
+#include <MitkCoreExports.h>
 #include "mitkGeometry2D.h"
 #include "mitkRestorePlanePositionOperation.h"
 
@@ -42,21 +42,15 @@ public:
   mitkClassMacro(PlaneGeometry,Geometry2D);
 
   /** Method for creation through the object factory. */
-  itkNewMacro(Self);
+  itkFactorylessNewMacro(Self)
+  itkCloneMacro(Self)
 
   enum PlaneOrientation
   {
-#ifdef _MSC_VER
-    Transversal, // deprecated
-#endif
-    Axial = 0,
+    Axial,
     Sagittal,
     Frontal
   };
-
-#ifdef __GNUC__
-  __attribute__ ((deprecated)) static const PlaneOrientation Transversal = PlaneOrientation(Axial);
-#endif
 
   virtual void IndexToWorld(const Point2D &pt_units, Point2D &pt_mm) const;
 

@@ -17,10 +17,13 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef _MITK_CONTOURMODEL_WRITER__H_
 #define _MITK_CONTOURMODEL_WRITER__H_
 
-#include "ContourModelExports.h"
+#include <MitkContourModelExports.h>
 #include <itkProcessObject.h>
 #include <mitkFileWriterWithInformation.h>
 #include <mitkContourModel.h>
+
+//DEPRECATED
+#include <mitkTimeGeometry.h>
 
 namespace mitk
 {
@@ -31,10 +34,31 @@ namespace mitk
  * XML-based writer for mitk::ContourModels. Multiple ContourModels can be written in
  * a single XML file by simply setting multiple inputs to the filter.
  *
+ * The xml file will look like:
+ *
+ *   <?xml version="1.0" encoding="utf-8"?>
+ *   <contourModel>
+ *      <head>
+ *        <geometryInfo>
+ *        </geometryInfo>
+ *      </head>
+ *      <data>
+ *        <timestep n="0">
+ *          <controlPoints>
+ *            <point>
+ *              <x></x>
+ *              <y></y>
+ *              <z></z>
+ *            </point>
+ *          </controlPoint>
+ *        </timestep>
+ *      </data>
+ *    </contourModel>
+ *
  * @ingroup PSIO
  * @ingroup Process
  */
-class ContourModel_EXPORT ContourModelWriter : public mitk::FileWriterWithInformation
+class MitkContourModel_EXPORT ContourModelWriter : public mitk::FileWriterWithInformation
 {
 public:
 
@@ -42,7 +66,8 @@ public:
 
     mitkWriterMacro;
 
-    itkNewMacro( Self );
+    itkFactorylessNewMacro(Self)
+    itkCloneMacro(Self)
 
     typedef mitk::ContourModel InputType;
 
@@ -125,6 +150,8 @@ public:
     */
     virtual std::string GetWritenMIMEType();
 
+    using Superclass::SetInput;
+
     /**
     * @brief Set the DataTreenode as Input. Important: The Writer always have a SetInput-Function.
     */
@@ -195,12 +222,22 @@ protected:
     void WriteXML( mitk::ContourModel* contourModel, std::ofstream& out );
 
     /**
-    * Writes the geometry information of the TimeSlicedGeometry to an outstream.
+    * Writes the geometry information of the TimeGeometry to an outstream.
     * The root tag is not included.
-    * @param geometry the TimeSlicedGeometry of the contour.
+    * @param geometry the TimeGeometry of the contour.
     * @param the stream to write to.
     */
-    void WriteGeometryInformation( mitk::TimeSlicedGeometry* geometry, std::ofstream& out );
+    void WriteGeometryInformation( mitk::TimeGeometry* geometry, std::ofstream& out );
+
+    /**
+    * Writes the geometry information of the TimeGeometry to an outstream.
+    * The root tag is not included.
+    * @param geometry the TimeGeometry of the contour.
+    * @param the stream to write to.
+    *
+    * \deprecatedSince{2013_09} Please use TimeGeometry instead of TimeSlicedGeometry. For more information see http://www.mitk.org/Development/Refactoring%20of%20the%20Geometry%20Classes%20-%20Part%201
+    */
+    DEPRECATED(void WriteGeometryInformation( mitk::TimeSlicedGeometry* geometry, std::ofstream& out ));
 
     /**
      * Writes an standard xml header to the given stream.

@@ -78,12 +78,6 @@ QmitkTensorReconstructionView::QmitkTensorReconstructionView()
     m_TensorImages = mitk::DataStorage::SetOfObjects::New();
 }
 
-QmitkTensorReconstructionView::QmitkTensorReconstructionView(const QmitkTensorReconstructionView& other)
-{
-    Q_UNUSED(other)
-    throw std::runtime_error("Copy constructor not implemented");
-}
-
 QmitkTensorReconstructionView::~QmitkTensorReconstructionView()
 {
 
@@ -161,7 +155,7 @@ void QmitkTensorReconstructionView::ResidualClicked(int slice, int volume)
 
         GradientDirectionContainerType::Pointer dirs = diffImage->GetDirections();
 
-        for(int i=0; i<dirs->Size() && i<=volume; i++)
+        for(unsigned int i=0; i<dirs->Size() && i<=volume; i++)
         {
             GradientDirectionType grad = dirs->ElementAt(i);
 
@@ -267,22 +261,8 @@ void QmitkTensorReconstructionView::ResidualCalculation()
     typedef itk::TensorImageToDiffusionImageFilter<
             TTensorPixelType, DiffusionPixelType > FilterType;
 
-    FilterType::GradientListType gradientList;
     mitk::DiffusionImage<DiffusionPixelType>::GradientDirectionContainerType* gradients
             = diffImage->GetDirections();
-
-    // Copy gradients vectors from gradients to gradientList
-    for(int i=0; i<gradients->Size(); i++)
-    {
-        mitk::DiffusionImage<DiffusionPixelType>::GradientDirectionType vec = gradients->at(i);
-        itk::Vector<double,3> grad;
-
-        grad[0] = vec[0];
-        grad[1] = vec[1];
-        grad[2] = vec[2];
-
-        gradientList.push_back(grad);
-    }
 
     // Find the min and the max values from a baseline image
     mitk::ImageStatisticsHolder *stats = diffImage->GetStatistics();
@@ -290,8 +270,8 @@ void QmitkTensorReconstructionView::ResidualCalculation()
     //Initialize filter that calculates the modeled diffusion weighted signals
     FilterType::Pointer filter = FilterType::New();
     filter->SetInput( tensorImage );
-    filter->SetBValue(diffImage->GetB_Value());
-    filter->SetGradientList(gradientList);
+    filter->SetBValue(diffImage->GetReferenceBValue());
+    filter->SetGradientList(gradients);
     filter->SetMin(stats->GetScalarValueMin());
     filter->SetMax(stats->GetScalarValueMax());
     filter->Update();
@@ -300,8 +280,8 @@ void QmitkTensorReconstructionView::ResidualCalculation()
     // TENSORS TO DATATREE
     mitk::DiffusionImage<DiffusionPixelType>::Pointer image = mitk::DiffusionImage<DiffusionPixelType>::New();
     image->SetVectorImage( filter->GetOutput() );
-    image->SetB_Value(diffImage->GetB_Value());
-    image->SetDirections(gradientList);
+    image->SetReferenceBValue(diffImage->GetReferenceBValue());
+    image->SetDirections(gradients);
     image->InitializeFromVectorImage();
     mitk::DataNode::Pointer node = mitk::DataNode::New();
     node->SetData( image );
@@ -315,9 +295,8 @@ void QmitkTensorReconstructionView::ResidualCalculation()
 
     GetDefaultDataStorage()->Add(node);
 
-
-    std::vector<unsigned int> b0Indices = image->GetB0Indices();
-
+    mitk::DiffusionImage<DiffusionPixelType>::BValueMap map =image->GetBValueMap();
+    mitk::DiffusionImage<DiffusionPixelType>::IndicesVector b0Indices = map[0];
 
 
     typedef itk::ResidualImageFilter<DiffusionPixelType, float> ResidualImageFilterType;
@@ -354,8 +333,6 @@ void QmitkTensorReconstructionView::ResidualCalculation()
     // If you don't want to use the whole color range, you can use
     // SetValueRange, SetHueRange, and SetSaturationRange
     lookupTable->Build();
-
-    int size = lookupTable->GetTable()->GetSize();
 
     vtkSmartPointer<vtkLookupTable> reversedlookupTable =
             vtkSmartPointer<vtkLookupTable>::New();
@@ -585,7 +562,7 @@ void QmitkTensorReconstructionView::TensorReconstructionWithCorr
 
             ReconstructionFilter::Pointer reconFilter = ReconstructionFilter::New();
             reconFilter->SetGradientImage( gradientContainerCopy, vols->GetVectorImage() );
-            reconFilter->SetBValue(vols->GetB_Value());
+            reconFilter->SetBValue(vols->GetReferenceBValue());
             reconFilter->SetB0Threshold(b0Threshold);
             reconFilter->Update();
 
@@ -712,11 +689,11 @@ void QmitkTensorReconstructionView::ItkTensorReconstruction(mitk::DataStorage::S
             }
 
             tensorReconstructionFilter->SetGradientImage( gradientContainerCopy, vols->GetVectorImage() );
-            tensorReconstructionFilter->SetBValue(vols->GetB_Value());
+            tensorReconstructionFilter->SetBValue(vols->GetReferenceBValue());
             tensorReconstructionFilter->SetThreshold( m_Controls->m_TensorReconstructionThreshold->value() );
             tensorReconstructionFilter->Update();
             clock.Stop();
-            MITK_DEBUG << "took " << clock.GetMeanTime() << "s.";
+            MITK_DEBUG << "took " << clock.GetMean() << "s.";
 
             // TENSORS TO DATATREE
             mitk::TensorImage::Pointer image = mitk::TensorImage::New();
@@ -810,7 +787,7 @@ void QmitkTensorReconstructionView::TensorsToDWI()
 
 void QmitkTensorReconstructionView::TensorsToQbi()
 {
-    for (int i=0; i<m_TensorImages->size(); i++)
+    for (unsigned int i=0; i<m_TensorImages->size(); i++)
     {
         mitk::DataNode::Pointer tensorImageNode = m_TensorImages->at(i);
         MITK_INFO << "starting Q-Ball estimation";
@@ -894,22 +871,21 @@ void QmitkTensorReconstructionView::OnSelectionChanged( std::vector<mitk::DataNo
 }
 
 template<int ndirs>
-std::vector<itk::Vector<double,3> > QmitkTensorReconstructionView::MakeGradientList()
+QmitkTensorReconstructionView::GradientListType::Pointer QmitkTensorReconstructionView::MakeGradientList()
 {
-    std::vector<itk::Vector<double,3> > retval;
+  QmitkTensorReconstructionView::GradientListType::Pointer retval = GradientListType::New();
     vnl_matrix_fixed<double, 3, ndirs>* U =
             itk::PointShell<ndirs, vnl_matrix_fixed<double, 3, ndirs> >::DistributePointShell();
 
     for(int i=0; i<ndirs;i++)
     {
-        itk::Vector<double,3> v;
+        GradientType v;
         v[0] = U->get(0,i); v[1] = U->get(1,i); v[2] = U->get(2,i);
-        retval.push_back(v);
+        retval->push_back(v);
     }
     // Add 0 vector for B0
-    itk::Vector<double,3> v;
-    v.Fill(0.0);
-    retval.push_back(v);
+    GradientType v(0.0);
+    retval->push_back(v);
 
     return retval;
 }
@@ -952,7 +928,7 @@ void QmitkTensorReconstructionView::DoTensorsToDWI(mitk::DataStorage::SetOfObjec
             typedef itk::TensorImageToDiffusionImageFilter<
                     TTensorPixelType, DiffusionPixelType > FilterType;
 
-            FilterType::GradientListType gradientList;
+            FilterType::GradientListType::Pointer gradientList;
 
             switch(m_Controls->m_TensorsToDWINumDirsSelect->currentIndex())
             {
@@ -1005,12 +981,12 @@ void QmitkTensorReconstructionView::DoTensorsToDWI(mitk::DataStorage::SetOfObjec
             //filter->SetNumberOfThreads(1);
             filter->Update();
             clock.Stop();
-            MBI_DEBUG << "took " << clock.GetMeanTime() << "s.";
+            MBI_DEBUG << "took " << clock.GetMean() << "s.";
 
             // TENSORS TO DATATREE
             mitk::DiffusionImage<DiffusionPixelType>::Pointer image = mitk::DiffusionImage<DiffusionPixelType>::New();
             image->SetVectorImage( filter->GetOutput() );
-            image->SetB_Value(bVal);
+            image->SetReferenceBValue(bVal);
             image->SetDirections(gradientList);
             image->InitializeFromVectorImage();
             mitk::DataNode::Pointer node=mitk::DataNode::New();

@@ -449,7 +449,7 @@ struct CvpSelListener : ISelectionListener
     if (part)
     {
       QString partname(part->GetPartName().c_str());
-      if(partname.compare("Datamanager")==0)
+      if(partname.compare("Data Manager")==0)
       {
 
         // apply selection
@@ -485,7 +485,10 @@ QmitkControlVisualizationPropertiesView::QmitkControlVisualizationPropertiesView
 {
   currentThickSlicesMode = 1;
   m_MyMenu = NULL;
-  itk::MultiThreader::SetGlobalDefaultNumberOfThreads(itk::MultiThreader::GetGlobalMaximumNumberOfThreads());
+  int numThread = itk::MultiThreader::GetGlobalMaximumNumberOfThreads();
+  if (numThread > 12)
+    numThread = 12;
+  itk::MultiThreader::SetGlobalDefaultNumberOfThreads(numThread);
 }
 
 QmitkControlVisualizationPropertiesView::QmitkControlVisualizationPropertiesView(const QmitkControlVisualizationPropertiesView& other)
@@ -661,8 +664,6 @@ void QmitkControlVisualizationPropertiesView::CreateQtPartControl(QWidget *paren
     m_Controls->frame_tube->setVisible(false);
     m_Controls->frame_wire->setVisible(false);
   }
-
-
 
   m_IsInitialized = false;
   m_SelListener = berry::ISelectionListener::Pointer(new CvpSelListener(this));
@@ -902,8 +903,9 @@ void QmitkControlVisualizationPropertiesView::NodeAdded(const mitk::DataNode *no
     // if there is no b0 image in the dataset, the GetB0Indices() returns a vector of size 0
     // and hence we cannot set the Property directly to .front()
     int displayChannelPropertyValue = 0;
-    if( dimg->GetB0Indices().size() > 0)
-      displayChannelPropertyValue = dimg->GetB0Indices().front();
+    mitk::DiffusionImage<short>::BValueMap map = dimg->GetBValueMap();
+    if( map[0].size() > 0)
+      displayChannelPropertyValue = map[0].front();
 
     notConst->SetIntProperty("DisplayChannel", displayChannelPropertyValue );
   }
@@ -913,6 +915,7 @@ void QmitkControlVisualizationPropertiesView::NodeAdded(const mitk::DataNode *no
 implement SelectionService Listener explicitly */
 void QmitkControlVisualizationPropertiesView::OnSelectionChanged( std::vector<mitk::DataNode*> nodes )
 {
+
   // deactivate channel slider if no diffusion weighted image or tbss image is selected
   m_Controls->m_DisplayIndex->setVisible(false);
   m_Controls->m_DisplayIndexSpinBox->setVisible(false);
@@ -981,6 +984,13 @@ void QmitkControlVisualizationPropertiesView::OnSelectionChanged( std::vector<mi
     else
       m_Controls->m_TSMenu->setVisible(true);
   }
+
+  // if selection changes, set the current selction member and call SellListener::DoSelectionChanged
+  berry::ISelection::ConstPointer sel(
+    this->GetSite()->GetWorkbenchWindow()->GetSelectionService()->GetSelection("org.mitk.views.datamanager"));
+  m_CurrentSelection = sel.Cast<const IStructuredSelection>();
+  m_SelListener.Cast<CvpSelListener>()->DoSelectionChanged(sel);
+
 }
 
 mitk::DataStorage::SetOfObjects::Pointer
@@ -1161,7 +1171,7 @@ void QmitkControlVisualizationPropertiesView::Reinit()
     if (basedata.IsNotNull())
     {
       mitk::RenderingManager::GetInstance()->InitializeViews(
-        basedata->GetTimeSlicedGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
+        basedata->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true );
       mitk::RenderingManager::GetInstance()->RequestUpdateAll();
     }
   }
@@ -1686,7 +1696,7 @@ void QmitkControlVisualizationPropertiesView::PlanarFigureFocus()
     if(figureInteractor.IsNull())
     {
       figureInteractor = mitk::PlanarFigureInteractor::New();
-      us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "PlanarFigure" );
+      us::Module* planarFigureModule = us::ModuleRegistry::GetModule( "MitkPlanarFigure" );
       figureInteractor->LoadStateMachine("PlanarFigureInteraction.xml", planarFigureModule );
       figureInteractor->SetEventConfig( "PlanarFigureConfig.xml", planarFigureModule );
       figureInteractor->SetDataNode( m_SelectedNode );

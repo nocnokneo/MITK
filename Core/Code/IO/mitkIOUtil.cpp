@@ -70,17 +70,29 @@ static std::string GetLastErrorStr()
 #ifdef US_PLATFORM_WINDOWS
 
 #include <io.h>
-#include <fcntl.h>
 #include <direct.h>
+
+// make the posix flags point to the obsolte bsd types on windows
+#define S_IRUSR S_IREAD
+#define S_IWUSR S_IWRITE
+
+#else
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#endif
+
+#include <fcntl.h>
 #include <sys/stat.h>
 
 static const char validLetters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-// A Windows version of the POSIX mkstemp function
-static int mkstemp(char* tmpl)
+// A cross-platform version of the mkstemps function
+static int mkstemps_compat(char* tmpl, int suffixlen)
 {
   static unsigned long long value = 0;
-  unsigned long long randomTimeBits = 0;
   int savedErrno = errno;
 
   // Lower bound on the number of temporary files to attempt to generate.
@@ -95,16 +107,17 @@ static int mkstemp(char* tmpl)
 #endif
 
   const int len = strlen(tmpl);
-  if (len < 6 || strcmp(&tmpl[len - 6], "XXXXXX"))
+  if ((len - suffixlen) < 6 || strncmp(&tmpl[len - 6 - suffixlen], "XXXXXX", 6))
   {
     errno = EINVAL;
     return -1;
   }
 
   /* This is where the Xs start.  */
-  char* XXXXXX = &tmpl[len - 6];
+  char* XXXXXX = &tmpl[len - 6 - suffixlen];
 
   /* Get some more or less random data.  */
+#ifdef US_PLATFORM_WINDOWS
   {
     SYSTEMTIME stNow;
     FILETIME ftNow;
@@ -117,11 +130,19 @@ static int mkstemp(char* tmpl)
       errno = -1;
       return -1;
     }
-
-    randomTimeBits = ((static_cast<unsigned long long>(ftNow.dwHighDateTime) << 32)
-                      | static_cast<unsigned long long>(ftNow.dwLowDateTime));
+    unsigned long long randomTimeBits = ((static_cast<unsigned long long>(ftNow.dwHighDateTime) << 32)
+                                         | static_cast<unsigned long long>(ftNow.dwLowDateTime));
+    value = randomTimeBits ^ static_cast<unsigned long long>(GetCurrentThreadId());
   }
-  value += randomTimeBits ^ static_cast<unsigned long long>(GetCurrentThreadId());
+#else
+  {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned long long randomTimeBits = ((static_cast<unsigned long long>(tv.tv_usec) << 32)
+                                         | static_cast<unsigned long long>(tv.tv_sec));
+    value = randomTimeBits ^ static_cast<unsigned long long>(getpid());
+  }
+#endif
 
   for (unsigned int count = 0; count < attempts; value += 7777, ++count)
   {
@@ -140,7 +161,7 @@ static int mkstemp(char* tmpl)
     v /= 62;
     XXXXXX[5] = validLetters[v % 62];
 
-    int fd = _open (tmpl, _O_RDWR | _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+    int fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (fd >= 0)
     {
       errno = savedErrno;
@@ -157,11 +178,10 @@ static int mkstemp(char* tmpl)
   return -1;
 }
 
-// A Windows version of the POSIX mkdtemp function
-static char* mkdtemp(char* tmpl)
+// A cross-platform version of the POSIX mkdtemp function
+static char* mkdtemps_compat(char* tmpl, int suffixlen)
 {
   static unsigned long long value = 0;
-  unsigned long long randomTimeBits = 0;
   int savedErrno = errno;
 
   // Lower bound on the number of temporary dirs to attempt to generate.
@@ -176,16 +196,17 @@ static char* mkdtemp(char* tmpl)
 #endif
 
   const int len = strlen(tmpl);
-  if (len < 6 || strcmp(&tmpl[len - 6], "XXXXXX"))
+  if ((len - suffixlen) < 6 || strncmp(&tmpl[len - 6 - suffixlen], "XXXXXX", 6))
   {
     errno = EINVAL;
     return NULL;
   }
 
   /* This is where the Xs start.  */
-  char* XXXXXX = &tmpl[len - 6];
+  char* XXXXXX = &tmpl[len - 6 - suffixlen];
 
   /* Get some more or less random data.  */
+#ifdef US_PLATFORM_WINDOWS
   {
     SYSTEMTIME stNow;
     FILETIME ftNow;
@@ -198,11 +219,19 @@ static char* mkdtemp(char* tmpl)
       errno = -1;
       return NULL;
     }
-
-    randomTimeBits = ((static_cast<unsigned long long>(ftNow.dwHighDateTime) << 32)
-                      | static_cast<unsigned long long>(ftNow.dwLowDateTime));
+    unsigned long long randomTimeBits = ((static_cast<unsigned long long>(ftNow.dwHighDateTime) << 32)
+                                         | static_cast<unsigned long long>(ftNow.dwLowDateTime));
+    value = randomTimeBits ^ static_cast<unsigned long long>(GetCurrentThreadId());
   }
-  value += randomTimeBits ^ static_cast<unsigned long long>(GetCurrentThreadId());
+#else
+  {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned long long randomTimeBits = ((static_cast<unsigned long long>(tv.tv_usec) << 32)
+                                         | static_cast<unsigned long long>(tv.tv_sec));
+    value = randomTimeBits ^ static_cast<unsigned long long>(getpid());
+  }
+#endif
 
   unsigned int count = 0;
   for (; count < attempts; value += 7777, ++count)
@@ -222,7 +251,11 @@ static char* mkdtemp(char* tmpl)
     v /= 62;
     XXXXXX[5] = validLetters[v % 62];
 
+#ifdef US_PLATFORM_WINDOWS
     int fd = _mkdir (tmpl); //, _S_IREAD | _S_IWRITE | _S_IEXEC);
+#else
+    int fd = mkdir (tmpl, S_IRUSR | S_IWUSR | S_IXUSR);
+#endif
     if (fd >= 0)
     {
       errno = savedErrno;
@@ -239,7 +272,7 @@ static char* mkdtemp(char* tmpl)
   return NULL;
 }
 
-#endif
+//#endif
 
 namespace mitk {
 
@@ -313,7 +346,20 @@ std::string IOUtil::GetTempPath()
   return result;
 }
 
+std::string IOUtil::CreateTemporaryFile(const std::string& templateName, std::string path)
+{
+  ofstream tmpOutputStream;
+  std::string returnValue = CreateTemporaryFile(tmpOutputStream,templateName,path);
+  tmpOutputStream.close();
+  return returnValue;
+}
+
 std::string IOUtil::CreateTemporaryFile(std::ofstream& f, const std::string& templateName, std::string path)
+{
+  return CreateTemporaryFile(f, std::ios_base::out | std::ios_base::trunc, templateName, path);
+}
+
+std::string IOUtil::CreateTemporaryFile(std::ofstream& f, std::ios_base::openmode mode, const std::string& templateName, std::string path)
 {
   if (path.empty())
   {
@@ -324,12 +370,22 @@ std::string IOUtil::CreateTemporaryFile(std::ofstream& f, const std::string& tem
   std::vector<char> dst_path(path.begin(), path.end());
   dst_path.push_back('\0');
 
-  int fd = mkstemp(&dst_path[0]);
+  std::size_t lastX = path.find_last_of('X');
+  std::size_t firstX = path.find_last_not_of('X', lastX);
+  int firstNonX = firstX == std::string::npos ? - 1 : firstX - 1;
+  while (lastX != std::string::npos && (lastX - firstNonX) < 6)
+  {
+    lastX = path.find_last_of('X', firstX);
+    firstX = path.find_last_not_of('X', lastX);
+    firstNonX = firstX == std::string::npos ? - 1 : firstX - 1;
+  }
+  std::size_t suffixlen = lastX == std::string::npos ? path.size() : path.size() - lastX  - 1;
+
+  int fd = mkstemps_compat(&dst_path[0], suffixlen);
   if(fd != -1)
   {
     path.assign(dst_path.begin(), dst_path.end() - 1);
-    f.open(path.c_str(),
-           std::ios_base::trunc | std::ios_base::out);
+    f.open(path.c_str(), mode | std::ios_base::out | std::ios_base::trunc);
     close(fd);
   }
   else
@@ -350,7 +406,18 @@ std::string IOUtil::CreateTemporaryDirectory(const std::string& templateName, st
   std::vector<char> dst_path(path.begin(), path.end());
   dst_path.push_back('\0');
 
-  if(mkdtemp(&dst_path[0]) == NULL)
+  std::size_t lastX = path.find_last_of('X');
+  std::size_t firstX = path.find_last_not_of('X', lastX);
+  int firstNonX = firstX == std::string::npos ? - 1 : firstX - 1;
+  while (lastX != std::string::npos && (lastX - firstNonX) < 6)
+  {
+    lastX = path.find_last_of('X', firstX);
+    firstX = path.find_last_not_of('X', lastX);
+    firstNonX = firstX == std::string::npos ? - 1 : firstX - 1;
+  }
+  std::size_t suffixlen = lastX == std::string::npos ? path.size() : path.size() - lastX  - 1;
+
+  if(mkdtemps_compat(&dst_path[0], suffixlen) == NULL)
   {
     mitkThrow() << "Creating temporary directory " << &dst_path[0] << " failed: " << GetLastErrorStr();
   }
@@ -554,7 +621,7 @@ bool IOUtil::SaveSurface(Surface::Pointer surface, const std::string path)
             if( polys->GetNumberOfStrips() > 0 )
             {
                 vtkSmartPointer<vtkTriangleFilter> triangleFilter = vtkSmartPointer<vtkTriangleFilter>::New();
-                triangleFilter->SetInput(polys);
+                triangleFilter->SetInputData(polys);
                 triangleFilter->Update();
                 polys = triangleFilter->GetOutput();
                 polys->Register(NULL);

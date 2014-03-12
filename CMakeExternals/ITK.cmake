@@ -8,7 +8,7 @@ if(DEFINED ITK_DIR AND NOT EXISTS ${ITK_DIR})
 endif()
 
 set(proj ITK)
-set(proj_DEPENDENCIES GDCM)
+set(proj_DEPENDENCIES GDCM VTK) # Dependency on VTK due to Module_ITKVtkGlue:BOOL=ON
 if(MITK_USE_Python)
   list(APPEND proj_DEPENDENCIES CableSwig)
 endif()
@@ -31,7 +31,6 @@ if(NOT DEFINED ITK_DIR)
 
     list(APPEND additional_cmake_args
          -DITK_WRAPPING:BOOL=ON
-         #-DITK_USE_REVIEW:BOOL=ON
          -DPYTHON_EXECUTABLE:FILEPATH=${PYTHON_EXECUTABLE}
          -DPYTHON_INCLUDE_DIR:PATH=${PYTHON_INCLUDE_DIR}
          -DPYTHON_INCLUDE_DIR2:PATH=${PYTHON_INCLUDE_DIR2}
@@ -64,6 +63,12 @@ if(NOT DEFINED ITK_DIR)
         )
   endif()
 
+  # Keep the behaviour of ITK 4.3 which by default turned on ITK Review
+  # see MITK bug #17338
+  list(APPEND additional_cmake_args
+    -DModule_ITKReview:BOOL=ON
+  )
+
   if(CUDA_TOOLKIT_ROOT_DIR)
     if(NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
       message(FATAL_ERROR "CUDA_TOOLKIT_ROOT_DIR variable is defined but corresponds to non-existing directory")
@@ -73,7 +78,7 @@ if(NOT DEFINED ITK_DIR)
         )
   endif()
 
-  set(ITK_PATCH_COMMAND ${CMAKE_COMMAND} -DTEMPLATE_FILE:FILEPATH=${MITK_SOURCE_DIR}/CMakeExternals/EmptyFileForPatching.dummy -P ${MITK_SOURCE_DIR}/CMakeExternals/PatchITK-4.3.1.cmake)
+  set(ITK_PATCH_COMMAND ${CMAKE_COMMAND} -DTEMPLATE_FILE:FILEPATH=${MITK_SOURCE_DIR}/CMakeExternals/EmptyFileForPatching.dummy -P ${MITK_SOURCE_DIR}/CMakeExternals/PatchITK-4.5.1.cmake)
 
   ExternalProject_Add(${proj}
      SOURCE_DIR ${CMAKE_BINARY_DIR}/${proj}-src

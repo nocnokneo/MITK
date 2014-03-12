@@ -17,13 +17,13 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef mitkSimulationIOFactory_h
 #define mitkSimulationIOFactory_h
 
-#include <itkObjectFactoryBase.h>
 #include <mitkCommon.h>
-#include <SimulationExports.h>
+#include <itkObjectFactoryBase.h>
+#include <MitkSimulationExports.h>
 
 namespace mitk
 {
-  class Simulation_EXPORT SimulationIOFactory : public itk::ObjectFactoryBase
+  class MitkSimulation_EXPORT SimulationIOFactory : public itk::ObjectFactoryBase
   {
   public:
     mitkClassMacro(SimulationIOFactory, itk::ObjectFactoryBase);
@@ -35,10 +35,7 @@ namespace mitk
   private:
     SimulationIOFactory();
     ~SimulationIOFactory();
-
-    SimulationIOFactory(const Self&);
-    Self& operator=(const Self&);
   };
-};
+}
 
 #endif

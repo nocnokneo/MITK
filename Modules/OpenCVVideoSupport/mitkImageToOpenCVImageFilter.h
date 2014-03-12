@@ -21,7 +21,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include <mitkImage.h>
 #include <mitkWeakPointer.h>
 #include <itkOpenCVImageBridge.h>
-#include <mitkOpenCVVideoSupportExports.h>
+#include <MitkOpenCVVideoSupportExports.h>
 
 namespace mitk
 {
@@ -38,7 +38,8 @@ class MITK_OPENCVVIDEOSUPPORT_EXPORT ImageToOpenCVImageFilter : public itk::Obje
         typedef itk::RGBPixel< double > DoubleRGBPixelType;
 
         mitkClassMacro(ImageToOpenCVImageFilter, itk::Object);
-        itkNewMacro(ImageToOpenCVImageFilter);
+        itkFactorylessNewMacro(Self)
+        itkCloneMacro(Self)
 
         ///
         /// \brief set the input MITK image
@@ -83,12 +84,6 @@ class MITK_OPENCVVIDEOSUPPORT_EXPORT ImageToOpenCVImageFilter : public itk::Obje
         mitk::WeakPointer<mitk::Image> m_Image;
         IplImage* m_OpenCVImage;
 };
-
-template<typename TPixel, unsigned int VImageDimension>
-void mitk::ImageToOpenCVImageFilter::ItkImageProcessing( itk::Image<TPixel,VImageDimension>* image )
-{
-    m_OpenCVImage = itk::OpenCVImageBridge::ITKImageToIplImage (image);
-}
 
 } // namespace
 

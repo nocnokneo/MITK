@@ -18,7 +18,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #ifndef _MITK_PLANAR_FIGURE_H_
 #define _MITK_PLANAR_FIGURE_H_
 
-#include "PlanarFigureExports.h"
+#include <MitkPlanarFigureExports.h>
 #include "mitkBaseData.h"
 #include "mitkCommon.h"
 
@@ -54,7 +54,7 @@ class Geometry2D;
  * TODO: Implement local 2D transform (including center of rotation...)
  *
  */
-class PlanarFigure_EXPORT PlanarFigure : public BaseData
+class MitkPlanarFigure_EXPORT PlanarFigure : public BaseData
 {
 public:
   mitkClassMacro( PlanarFigure, BaseData )
@@ -326,9 +326,10 @@ protected:
    * Must be implemented in sub-classes. */
   virtual void EvaluateFeaturesInternal() = 0;
 
-  /** \brief Initializes the TimeSlicedGeometry describing the (time-resolved)
-   * geometry of this figure. Note that each time step holds one Geometry2D. */
-  virtual void InitializeTimeSlicedGeometry( unsigned int timeSteps = 1 );
+  /** \brief Initializes the TimeGeometry describing the (time-resolved)
+   * geometry of this figure. Note that each time step holds one Geometry2D.
+   */
+  virtual void InitializeTimeGeometry( unsigned int timeSteps = 1 );
 
   /** \brief defines the number of PolyLines that will be available */
   void SetNumberOfPolyLines( unsigned int numberOfPolyLines );

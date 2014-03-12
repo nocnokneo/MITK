@@ -36,9 +36,9 @@
 #ifndef Q_VTK_INTERACTOR_ADAPTER_H
 #define Q_VTK_INTERACTOR_ADAPTER_H
 
-#include <QtCore/QObject>
+#include <QObject>
 
-#include "OpenViewCoreExports.h"
+#include <MitkOpenViewCoreExports.h>
 
 class vtkRenderWindowInteractor;
 class QEvent;

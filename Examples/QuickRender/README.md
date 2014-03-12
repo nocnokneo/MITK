@@ -10,7 +10,7 @@ application that integrates MITK render windows.
 The `QuickRender` application is located in `Examples/QuickRender`
  - it provides no "File/Open" dialog
  - should be called with a file loadable by MITK, e.g. a 3D ![NRRD file](http://mitk.org/git/?p=MITK-Data.git;a=blob_plain;f=Pic3D.nrrd;hb=HEAD)
- 
+
 `./QuickRender ~/NRRD-testimages/nrrd3dblock.nrrd`
 
 ![Screenshot](http://maleike.github.io/MITK/quickrender.png)

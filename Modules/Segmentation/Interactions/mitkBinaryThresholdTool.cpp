@@ -44,7 +44,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "usGetModuleContext.h"
 
 namespace mitk {
-  MITK_TOOL_MACRO(Segmentation_EXPORT, BinaryThresholdTool, "Thresholding tool");
+  MITK_TOOL_MACRO(MitkSegmentation_EXPORT, BinaryThresholdTool, "Thresholding tool");
 }
 
 mitk::BinaryThresholdTool::BinaryThresholdTool()
@@ -53,8 +53,6 @@ m_SensibleMaximumThresholdValue(+100),
 m_CurrentThresholdValue(0.0),
 m_IsFloatImage(false)
 {
-  this->SupportRoiOn();
-
   m_ThresholdFeedbackNode = DataNode::New();
   mitk::CoreObjectFactory::GetInstance()->SetDefaultProperties( m_ThresholdFeedbackNode );
 
@@ -190,7 +188,7 @@ void mitk::BinaryThresholdTool::SetupPreviewNodeFor( DataNode* nodeForThresholdi
       }
       else
       {
-        m_CurrentThresholdValue = (m_SensibleMaximumThresholdValue + m_SensibleMinimumThresholdValue)/2;
+        m_CurrentThresholdValue = (m_SensibleMaximumThresholdValue + m_SensibleMinimumThresholdValue) / 2.0;
       }
 
       IntervalBordersChanged.Send(m_SensibleMinimumThresholdValue, m_SensibleMaximumThresholdValue, m_IsFloatImage);
@@ -317,8 +315,8 @@ void mitk::BinaryThresholdTool::OnRoiDataChanged()
 
     tmpNode->SetData(tmpImage);
 
-    m_SensibleMaximumThresholdValue = static_cast<int> (roiFilter->GetMaxValue());
-    m_SensibleMinimumThresholdValue = static_cast<int> (roiFilter->GetMinValue());
+    m_SensibleMaximumThresholdValue = static_cast<double> (roiFilter->GetMaxValue());
+    m_SensibleMinimumThresholdValue = static_cast<double> (roiFilter->GetMinValue());
     SetupPreviewNodeFor( tmpNode );
     m_NodeForThresholding = tmpNode;
 

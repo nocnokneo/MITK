@@ -19,7 +19,7 @@ See LICENSE.txt or http://www.mitk.org for details.
 #define _MITK_CONTOUR_H_
 
 #include "mitkCommon.h"
-#include "SegmentationExports.h"
+#include <MitkSegmentationExports.h>
 #include "mitkBaseData.h"
 #include <vtkRenderWindow.h>
 
@@ -34,12 +34,13 @@ namespace mitk
 
   \sa ContourModel
 */
-class Segmentation_EXPORT Contour : public BaseData
+class MitkSegmentation_EXPORT Contour : public BaseData
 {
 public:
   mitkClassMacro(Contour, BaseData);
 
-  itkNewMacro(Self);
+  itkFactorylessNewMacro(Self)
+  itkCloneMacro(Self)
 
   mitkCloneMacro(Contour);
 
@@ -49,7 +50,7 @@ public:
   typedef PathType::InputType                                   InputType;
   typedef PathType::OutputType                                  OutputType;
   typedef PathType::OffsetType                                  OffsetType;
-  typedef itk::BoundingBox<unsigned long, 3, ScalarType>        BoundingBoxType;
+  typedef itk::BoundingBox<unsigned long, 3, ScalarType >        BoundingBoxType;
   typedef BoundingBoxType::PointsContainer                      PointsContainer;
   typedef BoundingBoxType::PointsContainer::Pointer             PointsContainerPointer;
   typedef BoundingBoxType::PointsContainerIterator              PointsContainerIterator;

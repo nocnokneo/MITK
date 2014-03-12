@@ -10,7 +10,7 @@ set(MOC_H_FILES
   QVTKInteractorAdapter.h
   QVTKInteractorInternal.h
   QVTKQuickItem.h
-  vtkQtConnection.h 
+  vtkQtConnection.h
 )
 
 set(UI_FILES

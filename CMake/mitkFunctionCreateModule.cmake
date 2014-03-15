@@ -65,6 +65,9 @@ endfunction()
 #! - UI_FILES A list of .ui Qt UI files
 #! - QRC_FILES A list of .qrc Qt resource files
 #! - DOX_FILES A list of .dox Doxygen files
+#! - CU_FILES A list of .cu CUDA source files
+#! - QDBUS_H_FILES A list of .h header files which describe a QDBus interface
+#!                 (i.e. to be passed to qdbuscpp2xml)
 #!
 #! List of variables available after the function is called:
 #! - MODULE_NAME
@@ -238,6 +241,7 @@ function(mitk_create_module)
         set(UI_FILES )
         set(MOC_H_FILES )
         set(QRC_FILES )
+        set(QDBUS_H_FILES )
         set(CU_FILES )
 
         # clear other variables
@@ -245,6 +249,7 @@ function(mitk_create_module)
         set(Q${KITNAME}_GENERATED_MOC_CPP )
         set(Q${KITNAME}_GENERATED_QRC_CPP )
         set(Q${KITNAME}_GENERATED_UI_CPP )
+        set(Q${KITNAME}_GENERATED_QDBUS_CPP )
         set(Q${KITNAME}_GENERATED_CU_CPP )
 
         # Convert relative include dirs to absolute dirs
@@ -286,6 +291,10 @@ function(mitk_create_module)
 
         # ok, now create the module itself
         include(${MODULE_FILES_CMAKE})
+
+#        if(QDBUS_H_FILES)
+#          list(APPEND MODULE_PACKAGE_DEPENDS Qt${KITNAME}|QtDBus)
+#        endif()
 
         set(module_c_flags )
         set(module_c_flags_debug )
@@ -439,9 +448,27 @@ function(mitk_create_module)
           if(QRC_FILES)
             qt5_add_resources(Q${KITNAME}_GENERATED_QRC_CPP ${QRC_FILES})
           endif()
+          # QDBus interface support
+          if(QDBUS_H_FILES)
+            find_package(Qt5DBus REQUIRED)
+            foreach(_qdbus_h_file ${QDBUS_H_FILES})
+              get_filename_component(_qdbus_h_basename ${_qdbus_h_file} NAME_WE)
+# FIXME!! Look at /usr/lib64/cmake/Qt5DBus/...
+set(Qt5DBus_QDBUSCPP2XML_EXECUTABLE /usr/bin/qdbuscpp2xml)
+set(Qt5DBus_QDBUSXML2CPP_EXECUTABLE /usr/bin/qdbusxml2cpp)
+              QT5_GENERATE_DBUS_INTERFACE(${_qdbus_h_file})
+              set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_qdbus_h_basename}.xml PROPERTIES
+                NO_NAMESPACE 1
+                CLASSNAME    ${_qdbus_h_basename}QDBusInterface
+              )
+              QT5_ADD_DBUS_INTERFACE(Q${KITNAME}_GENERATED_QDBUS_CPP
+                                     ${CMAKE_CURRENT_BINARY_DIR}/${_qdbus_h_basename}.xml
+                                     ${_qdbus_h_basename}QDBusInterface)
+            endforeach()
+          endif()
         endif()
 
-        set(Q${KITNAME}_GENERATED_CPP ${Q${KITNAME}_GENERATED_CPP} ${Q${KITNAME}_GENERATED_UI_CPP} ${Q${KITNAME}_GENERATED_MOC_CPP} ${Q${KITNAME}_GENERATED_QRC_CPP})
+        set(Q${KITNAME}_GENERATED_CPP ${Q${KITNAME}_GENERATED_CPP} ${Q${KITNAME}_GENERATED_UI_CPP} ${Q${KITNAME}_GENERATED_MOC_CPP} ${Q${KITNAME}_GENERATED_QRC_CPP} ${Q${KITNAME}_GENERATED_QDBUS_CPP})
 
         set(${KITNAME}_GENERATED_CU_CPP )
         if (CU_FILES)

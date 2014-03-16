@@ -8,7 +8,7 @@ if(DEFINED ITK_DIR AND NOT EXISTS ${ITK_DIR})
 endif()
 
 set(proj ITK)
-set(proj_DEPENDENCIES GDCM)
+set(proj_DEPENDENCIES GDCM VTK) # Depends on VTK because of `-DModule_ITKVtkGlue:BOOL=ON`
 if(MITK_USE_Python)
   list(APPEND proj_DEPENDENCIES CableSwig)
 endif()

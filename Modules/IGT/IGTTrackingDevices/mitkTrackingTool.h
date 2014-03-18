@@ -41,6 +41,8 @@ namespace mitk
     virtual void PrintSelf(std::ostream& os, itk::Indent indent) const;
 
     virtual void SetToolTip(Point3D toolTipPosition, Quaternion orientation, ScalarType eps=0.0) = 0; ///< defines a tool tip for this tool in tool coordinates. GetPosition() and GetOrientation() return the data of the tool tip if it is defined. By default no tooltip is defined.
+    virtual Point3D GetTipOffset() const = 0;
+    virtual mitk::Quaternion GetTipRotation() const = 0;
     virtual void GetPosition(Point3D& position) const = 0;          ///< returns the current position of the tool as an array of three floats (in the tracking device coordinate system)
     virtual void GetOrientation(Quaternion& orientation) const = 0;  ///< returns the current orientation of the tool as a quaternion in a mitk::Point4D (in the tracking device coordinate system)
     virtual bool Enable() = 0;                       ///< enables the tool, so that it will be tracked

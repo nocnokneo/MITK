@@ -169,6 +169,37 @@ void mitk::InternalTrackingTool::SetToolTip(mitk::Point3D toolTipPosition,
   }
 }
 
+mitk::Point3D mitk::InternalTrackingTool::GetTipOffset() const
+{
+   mitk::Point3D tipOffset;
+   if (m_ToolTipSet)
+   {
+      tipOffset = m_ToolTip;
+   }
+   else
+   {
+      tipOffset.Fill(0);
+   }
+   return tipOffset;
+}
+
+mitk::Quaternion mitk::InternalTrackingTool::GetTipRotation() const
+{
+   mitk::Quaternion tipRotation;
+   if (m_ToolTipSet)
+   {
+      tipRotation = m_ToolTipRotation;
+   }
+   else
+   {
+      tipRotation[0] = 0;
+      tipRotation[1] = 0;
+      tipRotation[2] = 0;
+      tipRotation[3] = 1;
+   }
+   return tipRotation;
+}
+
 void mitk::InternalTrackingTool::SetOrientation(mitk::Quaternion orientation, mitk::ScalarType eps)
 {
   itkDebugMacro("setting  m_Orientation to " << orientation);

@@ -106,7 +106,7 @@ void mitk::Mapper::Update(mitk::BaseRenderer *renderer)
 {
   const DataNode* node = GetDataNode();
 
-  assert(node!=NULL);
+  if (node==NULL) return;
 
   mitk::BaseData * data = static_cast<mitk::BaseData *>(node->GetData());
 

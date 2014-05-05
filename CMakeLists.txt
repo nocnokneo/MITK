@@ -559,6 +559,10 @@ if(BUILD_TESTING)
   include(CTest)
   mark_as_advanced(TCL_TCLSH DART_ROOT)
 
+  # MIDAS is currently unused by MITK itself, but MIDAS3.cmake requires this
+  # varialbe be set even if MIDAS{...} style arguments are not used.
+  set(MIDAS_REST_URL "http://localhost/midas/api/rest")
+
   option(MITK_ENABLE_GUI_TESTING OFF "Enable the MITK GUI tests")
 
   # Setup file for setting custom ctest vars

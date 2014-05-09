@@ -4,7 +4,7 @@
     
 QMutex& QmlMitkBigRenderLock::GetMutex()
 {
-  static QMutex globalRenderingLock;
+  static QMutex globalRenderingLock(QMutex::Recursive);
   return globalRenderingLock;
 }
 

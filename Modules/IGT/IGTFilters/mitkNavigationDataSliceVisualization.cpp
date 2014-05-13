@@ -141,6 +141,13 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
       // y-axis ("up") of the axial oblique slicing plane
       toolTrajectory[0] = 0.0;
 
+      // Maintain the A-P orientation of the slice regardless of what
+      // direction the tool trajectory points along the A-P axis
+      if (toolTrajectory[1] > 0.0)
+      {
+         toolTrajectory *= -1;
+      }
+
       Vector3D slicingPlaneXAxisVector;
       FillVector3D(slicingPlaneXAxisVector, 1.0, 0.0, 0.0);
       snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, toolTrajectory);
@@ -156,6 +163,13 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
        // Project the tool trajectory onto the axial plane. This defines the
        // y-axis ("up") of the sagittal oblique slicing plane
        toolTrajectory[2] = 0.0;
+
+       // Maintain the A-P orientation of the slice regardless of what
+       // direction the tool trajectory points along the A-P axis
+       if (toolTrajectory[1] > 0.0)
+       {
+          toolTrajectory *= -1;
+       }
 
        Vector3D slicingPlaneXAxisVector;
        FillVector3D(slicingPlaneXAxisVector, 0.0, 0.0, 1.0);

@@ -104,11 +104,11 @@ QVTKInteractor* QVTKQuickItem::GetInteractor() const
   return m_interactor;
 }
 
-void QVTKQuickItem::itemChange(ItemChange change, const ItemChangeData &)
+void QVTKQuickItem::itemChange(ItemChange change, const ItemChangeData &changeData)
 {
   // The ItemSceneChange event is sent when we are first attached to a canvas.
   if (change == ItemSceneChange) {
-    QQuickWindow *c = window();
+    QQuickWindow *c = changeData.window;
     if (!c)
       {
       return;

@@ -30,70 +30,223 @@
 
 #include <iostream>
 
-QVTKQuickItem::QVTKQuickItem(QQuickItem* parent)
-:QQuickItem(parent)
-,m_InitCalledOnce(false)
+#include <QQuickFramebufferObject>
+#include <QOpenGLFramebufferObject>
+
+#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkObjectFactory.h>
+
+#include <vtkRendererCollection.h>
+#include <vtkCamera.h>
+
+class QVTKFramebufferObjectRenderer;
+
+class vtkInternalOpenGLRenderWindow : public vtkGenericOpenGLRenderWindow
 {
-  setFlag(ItemHasContents);
+public:
+  static vtkInternalOpenGLRenderWindow* New();
+  vtkTypeMacro(vtkInternalOpenGLRenderWindow, vtkGenericOpenGLRenderWindow)
+
+  virtual void OpenGLInitState()
+  {
+     Superclass::OpenGLInitState();
+     vtkgl::UseProgram(0); // Shouldn't Superclass::OpenGLInitState() handle this?
+
+     // We get depth buffer fighting between the VTK-drawn scene and the
+     // QSG-drawn background if we don't disable the depth test here.
+     glDisable(GL_DEPTH_TEST);
+
+     // Disabling blending doesn't seem crucial but when analyzing the OpenGL
+     // state at the start of VTK rendering this was a differnce between the
+     // FBO approach and the old draw-over-QSG approach
+     glDisable(GL_BLEND);
+  }
+
+  // Override to use deferred rendering - Tell the QSG that we need to
+  // be rendered which will then, at the appropriate time, call
+  // InternalRender to do the actual OpenGL rendering.
+  virtual void Render();
+
+  // Do the actual OpenGL rendering
+  void InternalRender()
+  {
+     Superclass::Render();
+  }
+
+  // Provides a convenient way to set the protected FBO ivars from an existing
+  // FBO that was created and owned by Qt's FBO abstraction class
+  // QOpenGLFramebufferObject
+  void SetFramebufferObject(QOpenGLFramebufferObject *fbo);
+
+  QVTKFramebufferObjectRenderer *QtParentRenderer;
+
+protected:
+  vtkInternalOpenGLRenderWindow() :
+     QtParentRenderer(0)
+  {
+  }
+
+  ~vtkInternalOpenGLRenderWindow()
+  {
+     // Prevent superclass destructors from destroying the framebuffer object.
+     // QOpenGLFramebufferObject owns the FBO and manages it's lifecyle.
+     this->OffScreenRendering = 0;
+  }
+};
+vtkStandardNewMacro(vtkInternalOpenGLRenderWindow);
+
+
+class QVTKFramebufferObjectRenderer : public QQuickFramebufferObject::Renderer
+{
+public:
+   QVTKFramebufferObjectRenderer(vtkInternalOpenGLRenderWindow *rw) :
+      m_vtkRenderWindow(rw),
+      m_neverRendered(true),
+      m_readyToRender(false)
+   {
+      m_vtkRenderWindow->Register(NULL);
+      m_vtkRenderWindow->QtParentRenderer = this;
+   }
+
+   ~QVTKFramebufferObjectRenderer()
+   {
+      m_vtkRenderWindow->QtParentRenderer = 0;
+      m_vtkRenderWindow->Delete();
+   }
+
+   // Called from the GUI thread
+   virtual void synchronize(QQuickFramebufferObject * item)
+   {
+     m_vtkQuickItem = static_cast<QVTKQuickItem*>(item);
+
+     // the first synchronize call - right before the the framebufferObject
+     // is created for the first time
+     if (m_neverRendered)
+     {
+       m_neverRendered = false;
+       m_vtkQuickItem->init();
+     }
+     m_readyToRender = m_vtkQuickItem->prepareForRender();
+   }
+
+   virtual void render()
+   {
+     if (!m_readyToRender)
+     {
+       return;
+     }
+
+     // lock/unlock the m_viewLock *inside* the prepareForRender/
+     // cleanupAfterRender to avoid a potential deadlock of prepareForRender/
+     // cleanupAfterRender are used to lock/unlock a different mutex
+     m_vtkQuickItem->m_viewLock.lock();
+
+     m_vtkRenderWindow->PushState();
+     m_vtkRenderWindow->OpenGLInitState();
+     m_vtkRenderWindow->InternalRender(); // vtkXOpenGLRenderWindow renders the scene to the FBO
+     m_vtkRenderWindow->PopState();
+
+     m_vtkQuickItem->m_viewLock.unlock();
+
+     m_vtkQuickItem->cleanupAfterRender();
+   }
+
+   QOpenGLFramebufferObject *createFramebufferObject(const QSize &size)
+   {
+//      qDebug("QVTKFramebufferObjectRenderer::createFramebufferObject");
+      QOpenGLFramebufferObjectFormat format;
+      format.setAttachment(QOpenGLFramebufferObject::Depth);
+      QOpenGLFramebufferObject *fbo = new QOpenGLFramebufferObject(size, format);
+      m_vtkRenderWindow->SetFramebufferObject(fbo);
+      return fbo;
+   }
+
+   vtkInternalOpenGLRenderWindow *m_vtkRenderWindow;
+   QVTKQuickItem *m_vtkQuickItem;
+   bool m_neverRendered;
+   bool m_readyToRender;
+
+   friend class vtkInternalOpenGLRenderWindow;
+};
+
+//
+// vtkInternalOpenGLRenderWindow Definitions
+//
+
+void vtkInternalOpenGLRenderWindow::Render()
+{
+   if (this->QtParentRenderer)
+   {
+      this->QtParentRenderer->update();
+   }
+}
+
+void vtkInternalOpenGLRenderWindow::SetFramebufferObject(QOpenGLFramebufferObject *fbo)
+{
+   // QOpenGLFramebufferObject documentation states that "The color render
+   // buffer or texture will have the specified internal format, and will
+   // be bound to the GL_COLOR_ATTACHMENT0 attachment in the framebuffer
+   // object"
+   this->BackLeftBuffer = this->FrontLeftBuffer = this->BackBuffer = this->FrontBuffer =
+         static_cast<unsigned int>(GL_COLOR_ATTACHMENT0);
+
+   // Save GL objects by static casting to standard C types. GL* types
+   // are not allowed in VTK header files.
+   QSize fboSize = fbo->size();
+   this->SetSize(fboSize.width(), fboSize.height());
+   this->NumberOfFrameBuffers = 1;
+   this->FrameBufferObject       = static_cast<unsigned int>(fbo->handle());
+   this->DepthRenderBufferObject = 0; // static_cast<unsigned int>(depthRenderBufferObject);
+   this->TextureObjects[0]       = static_cast<unsigned int>(fbo->texture());
+   this->OffScreenRendering = 1;
+   this->OffScreenUseFrameBuffer = 1;
+   this->Modified();
+}
+
+//
+// QVTKQuickItem Definitions
+//
+
+QVTKQuickItem::QVTKQuickItem(QQuickItem* parent)
+  : QQuickFramebufferObject(parent)
+{
   setAcceptHoverEvents(true);
   setAcceptedMouseButtons(Qt::LeftButton | Qt::MiddleButton | Qt::RightButton);
 
   m_interactor = vtkSmartPointer<QVTKInteractor>::New();
-  m_interactorAdapter = new QVTKInteractorAdapter(NULL);
-  m_interactorAdapter->moveToThread(this->thread());
-  m_interactorAdapter->setParent(this);
+  m_interactorAdapter = new QVTKInteractorAdapter(this);
   m_connect = vtkSmartPointer<vtkEventQtSlotConnect>::New();
-  //m_connect->Connect(m_interactor, vtkCommand::RenderEvent, this, SLOT(paint()));
-  vtkSmartPointer<vtkGenericOpenGLRenderWindow> win = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
-  this->SetRenderWindow(win);
-  this->geometryChanged(QRectF(x(), y(), width(), height()), QRectF(0, 0, 100, 100));
+
+  // Setup render window and interactor
+  m_win = vtkInternalOpenGLRenderWindow::New();
+  m_interactor->SetRenderWindow(m_win);
+  // Qt::DirectConnection in order to execute callback immediately.
+  // This avoids an error when vtkTexture attempts to query driver features and it is unable to determine "IsCurrent"
+  m_connect->Connect(m_win, vtkCommand::WindowIsCurrentEvent, this, SLOT(IsCurrent(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
+  m_connect->Connect(m_win, vtkCommand::WindowIsDirectEvent, this, SLOT(IsDirect(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
+  m_connect->Connect(m_win, vtkCommand::WindowSupportsOpenGLEvent, this, SLOT(SupportsOpenGL(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
+
+  connect(this, SIGNAL(textureFollowsItemSizeChanged(bool)),
+          this, SLOT(onTextureFollowsItemSizeChanged(bool)));
 }
 
 QVTKQuickItem::~QVTKQuickItem()
 {
-  this->SetRenderWindow(0);
-}
-
-void QVTKQuickItem::SetRenderWindow(vtkGenericOpenGLRenderWindow* win)
-{
   if(m_win)
     {
-    m_win->SetMapped(0);
-    //m_connect->Disconnect(m_win, vtkCommand::StartEvent, this, SLOT(Start()));
-    //m_connect->Disconnect(m_win, vtkCommand::WindowMakeCurrentEvent, this, SLOT(MakeCurrent()));
-    //m_connect->Disconnect(m_win, vtkCommand::EndEvent, this, SLOT(End()));
-    //m_connect->Disconnect(m_win, vtkCommand::WindowFrameEvent, this, SLOT(Update()));
     m_connect->Disconnect(m_win, vtkCommand::WindowIsCurrentEvent, this, SLOT(IsCurrent(vtkObject*, unsigned long, void*, void*)));
     m_connect->Disconnect(m_win, vtkCommand::WindowIsDirectEvent, this, SLOT(IsDirect(vtkObject*, unsigned long, void*, void*)));
     m_connect->Disconnect(m_win, vtkCommand::WindowSupportsOpenGLEvent, this, SLOT(SupportsOpenGL(vtkObject*, unsigned long, void*, void*)));
-    }
-
-  m_interactor->SetRenderWindow(win);
-  m_win = win;
-  m_interactor->Initialize();
-
-  if(m_win)
-    {
-    m_win->SetMapped(1);
-    m_win->SetDoubleBuffer(0);
-    m_win->SetFrontBuffer(vtkgl::COLOR_ATTACHMENT0_EXT);
-    m_win->SetFrontLeftBuffer(vtkgl::COLOR_ATTACHMENT0_EXT);
-    m_win->SetBackBuffer(vtkgl::COLOR_ATTACHMENT0_EXT);
-    m_win->SetBackLeftBuffer(vtkgl::COLOR_ATTACHMENT0_EXT);
-
-    //m_connect->Connect(m_win, vtkCommand::StartEvent, this, SLOT(Start()));
-    //m_connect->Connect(m_win, vtkCommand::WindowMakeCurrentEvent, this, SLOT(MakeCurrent()));
-    //m_connect->Connect(m_win, vtkCommand::EndEvent, this, SLOT(End()));
-    //m_connect->Connect(m_win, vtkCommand::WindowFrameEvent, this, SLOT(Update()));
-    // Qt::DirectConnection in order to execute callback immediately.
-    // This avoids an error when vtkTexture attempts to query driver features and it is unable to determine "IsCurrent"
-    m_connect->Connect(m_win, vtkCommand::WindowIsCurrentEvent, this, SLOT(IsCurrent(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
-    m_connect->Connect(m_win, vtkCommand::WindowIsDirectEvent, this, SLOT(IsDirect(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
-    m_connect->Connect(m_win, vtkCommand::WindowSupportsOpenGLEvent, this, SLOT(SupportsOpenGL(vtkObject*, unsigned long, void*, void*)), NULL, 0.0, Qt::DirectConnection);
+    m_win->Delete();
     }
 }
 
-vtkGenericOpenGLRenderWindow* QVTKQuickItem::GetRenderWindow() const
+QQuickFramebufferObject::Renderer *QVTKQuickItem::createRenderer() const
+{
+  return new QVTKFramebufferObjectRenderer(static_cast<vtkInternalOpenGLRenderWindow*>(m_win));
+}
+
+vtkOpenGLRenderWindow* QVTKQuickItem::GetRenderWindow() const
 {
   return m_win;
 }
@@ -101,64 +254,6 @@ vtkGenericOpenGLRenderWindow* QVTKQuickItem::GetRenderWindow() const
 QVTKInteractor* QVTKQuickItem::GetInteractor() const
 {
   return m_interactor;
-}
-
-void QVTKQuickItem::itemChange(ItemChange change, const ItemChangeData &changeData)
-{
-  // The ItemSceneChange event is sent when we are first attached to a canvas.
-  if (change == ItemSceneChange) {
-    QQuickWindow *c = changeData.window;
-    if (!c)
-      {
-      return;
-      }
-
-    // Connect our the beforeRendering signal to our paint function.
-    // Since this call is executed on the rendering thread it must be
-    // a Qt::DirectConnection
-    connect(c, SIGNAL(beforeRendering()), this, SLOT(paint()), Qt::DirectConnection);
-
-    // If we allow QML to do the clearing, they would clear what we paint
-    // and nothing would show.
-    c->setClearBeforeRendering(false);
-  }
-}
-
-void QVTKQuickItem::MakeCurrent()
-{
-  if (!this->window())
-    {
-    m_win->SetAbortRender(1);
-    cerr << "Could not make current since there is no canvas!" << endl;
-    return;
-    }
-  if (QThread::currentThread() != this->window()->openglContext()->thread())
-    {
-    m_win->SetAbortRender(1);
-    cerr << "Could not make current since we are on the wrong thread!" << endl;
-    return;
-    }
-  this->window()->openglContext()->makeCurrent(this->window());
-}
-
-void QVTKQuickItem::Start()
-{
-  MakeCurrent();
-
-  if (!m_win->GetAbortRender())
-    {
-    m_win->PushState();
-    m_win->OpenGLInitState();
-    }
-}
-
-void QVTKQuickItem::End()
-{
-  if (!m_win->GetAbortRender())
-    {
-    m_win->PopState();
-    }
-
 }
 
 void QVTKQuickItem::IsCurrent(vtkObject*, unsigned long, void*, void* call_data)
@@ -176,13 +271,20 @@ void QVTKQuickItem::IsDirect(vtkObject*, unsigned long, void*, void* call_data)
 void QVTKQuickItem::SupportsOpenGL(vtkObject*, unsigned long, void*, void* call_data)
 {
   int* ptr = reinterpret_cast<int*>(call_data);
-  *ptr = true;
-  //*ptr = QGLFormat::hasOpenGL();
+  *ptr = 1;
+}
+
+void QVTKQuickItem::onTextureFollowsItemSizeChanged(bool follows)
+{
+  if (!follows)
+  {
+    qWarning("QVTKQuickItem: Mouse interaction is not (yet) supported when textureFollowsItemSize==false");
+  }
 }
 
 void QVTKQuickItem::geometryChanged(const QRectF & newGeometry, const QRectF & oldGeometry)
 {
-  QQuickItem::geometryChanged(newGeometry, oldGeometry);
+  QQuickFramebufferObject::geometryChanged(newGeometry, oldGeometry);
   QSize oldSize(oldGeometry.width(), oldGeometry.height());
   QSize newSize(newGeometry.width(), newGeometry.height());
   QResizeEvent e(newSize, oldSize);
@@ -191,20 +293,6 @@ void QVTKQuickItem::geometryChanged(const QRectF & newGeometry, const QRectF & o
     this->m_viewLock.lock();
     m_interactorAdapter->ProcessEvent(&e, m_interactor);
     this->m_viewLock.unlock();
-    }
-  if(m_win.GetPointer() && window())
-    {
-    this->m_viewLock.lock();
-    m_win->SetSize(window()->width(), window()->height());
-    QPointF origin = mapToScene(QPointF(0, 0));
-    QPointF minPt(origin.x()/window()->width(), (window()->height() - origin.y() - height())/window()->height());
-    QPointF maxPt(minPt.x() + width()/window()->width(), minPt.y() + height()/window()->height());
-    if (m_win->GetRenderers()->GetFirstRenderer())
-      {
-      m_win->GetRenderers()->GetFirstRenderer()->SetViewport(minPt.x(), minPt.y(), maxPt.x(), maxPt.y());
-      }
-    this->m_viewLock.unlock();
-    update();
     }
 }
 
@@ -303,74 +391,18 @@ void QVTKQuickItem::hoverMoveEvent(QHoverEvent* e)
 
 void QVTKQuickItem::init()
 {
+  m_win->OpenGLInitContext();
+
+  // OpenGLInitContext doesn't do this, but OpenView had it. Why? What's it for?
+  m_win->GetExtensionManager()->LoadExtension("GL_VERSION_2_0");
 }
 
-void QVTKQuickItem::prepareForRender()
+bool QVTKQuickItem::prepareForRender()
 {
+   return true;
 }
 
 void QVTKQuickItem::cleanupAfterRender()
 {
 }
-
-QSGNode* QVTKQuickItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
-{
-  QSGSimpleRectNode *n = static_cast<QSGSimpleRectNode *>(oldNode);
-  if (!n) {
-    n = new QSGSimpleRectNode();
-  }
-  n->markDirty(QSGNode::DirtyForceUpdate);
-  return n;
-}
-
-
-void QVTKQuickItem::paint()
-{
-  if (!this->isVisible())
-    {
-    return;
-    }
-
-    if (!this->m_InitCalledOnce)
-    {
-      m_win->GetExtensionManager()->LoadExtension("GL_VERSION_1_4");
-      m_win->GetExtensionManager()->LoadExtension("GL_VERSION_2_0");
-
-      init();
-
-      this->m_InitCalledOnce = true;
-    }
-
-  this->m_viewLock.lock();
-
-  // Let subclasses do something each render
-  prepareForRender();
-
-  // Make sure viewport is up to date.
-  // This is needed because geometryChanged() is not called when parent geometry changes, so we miss when widths/heights
-  // of surrounding elements change.
-  m_win->SetSize(window()->width(), window()->height());
-  QPointF origin = mapToScene(QPointF(0, 0));
-  QPointF minPt(origin.x()/window()->width(), (window()->height() - origin.y() - height())/window()->height());
-  QPointF maxPt(minPt.x() + width()/window()->width(), minPt.y() + height()/window()->height());
-  if (m_win->GetRenderers()->GetFirstRenderer())
-    {
-    m_win->GetRenderers()->GetFirstRenderer()->SetViewport(minPt.x(), minPt.y(), maxPt.x(), maxPt.y());
-    }
-
-  // Turn off any QML shader program
-  vtkgl::UseProgram(0);
-
-  // Set blending correctly
-  glEnable(GL_BLEND);
-  vtkgl::BlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-  m_win->Render();
-
-  // Disable alpha test for QML
-  glDisable(GL_ALPHA_TEST);
-
-  cleanupAfterRender();
-
-  this->m_viewLock.unlock();
-}
+  

@@ -7,6 +7,10 @@ set(CPP_FILES
   QmlMitkFourRenderWindowWidget.cpp
 )
 
+set(H_FILES
+  QmlFboGeometry.h
+)
+
 set(MOC_H_FILES
   QmlMitkRenderWindowItem.h
   QmlMitkRenderingManager.h

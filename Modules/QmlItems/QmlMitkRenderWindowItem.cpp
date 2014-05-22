@@ -58,6 +58,7 @@
 #include "mitkInternalEvent.h"
 #include "mitkPlaneGeometryDataMapper2D.h"
 
+#include "QmlFboGeometry.h"
 #include "QmlMitkBigRenderLock.h"
 
 #define INTERACTION_LEGACY // TODO: remove INTERACTION_LEGACY!
@@ -91,6 +92,11 @@ QmlMitkRenderWindowItem
 : QVTKQuickItem(parent)
 {
   mitk::RenderWindowBase::Initialize( renderingManager, name.toStdString().c_str() );
+
+  // Replace the default DisplayGeometry with one in which the upper-left
+  // corner of the view port is the origin of the "Display" coordinate frame.
+  mitk::QmlFboGeometry::Pointer qmlFboGeometry = mitk::QmlFboGeometry::New( GetRenderer()->GetDisplayGeometry() );
+  GetRenderer()->SetDisplayGeometry(qmlFboGeometry.GetPointer());
 
   /* from QmitkRenderWindow. Required?
   setFocusPolicy(Qt::StrongFocus);
@@ -353,12 +359,22 @@ void QmlMitkRenderWindowItem::wheelEvent(QWheelEvent *we)
 }
 
 
-void QmlMitkRenderWindowItem::prepareForRender()
+bool QmlMitkRenderWindowItem::prepareForRender()
 {
 //  Adjust camera is kaputt wenn nicht der renderingmanager dem vtkprop bescheid sagt!
 //  this is just a workaround
-  QmlMitkBigRenderLock::GetMutex().lock();
-  mitk::RenderWindowBase::GetRenderer()->ForceImmediateUpdate();
+
+   //  If not able to get the render lock within a timeout (20 millsec), then give up and return false.
+  if (QmlMitkBigRenderLock::GetMutex().tryLock(20))
+  {
+     mitk::RenderWindowBase::GetRenderer()->ForceImmediateUpdate();
+  }
+  else
+  {
+    MITK_WARN << "Timed out trying to obtain the Qml BigRenderLock";
+    return false;
+  }
+  return true;
 }
 
 void QmlMitkRenderWindowItem::cleanupAfterRender()

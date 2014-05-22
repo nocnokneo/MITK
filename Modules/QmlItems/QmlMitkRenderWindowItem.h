@@ -50,7 +50,7 @@ protected slots:
 protected:
 
   virtual void init();
-  virtual void prepareForRender();
+  virtual bool prepareForRender();
   virtual void cleanupAfterRender();
 
   mitk::Point2D GetMousePosition(QMouseEvent* me) const;

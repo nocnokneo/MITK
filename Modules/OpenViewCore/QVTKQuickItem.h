@@ -8,7 +8,7 @@
 #ifndef QVTKQuickItem_h
 #define QVTKQuickItem_h
 
-#include <QQuickItem>
+#include <QQuickFramebufferObject>
 
 #include <QOpenGLShaderProgram>
 
@@ -23,12 +23,13 @@ class QOpenGLContext;
 class QOpenGLFramebufferObject;
 class QVTKInteractorAdapter;
 class QVTKInteractor;
+class QVTKFramebufferObjectRenderer;
 class vtkEventQtSlotConnect;
-class vtkGenericOpenGLRenderWindow;
+class vtkOpenGLRenderWindow;
 class vtkObject;
 class vtkContextView;
 
-class MitkOpenViewCore_EXPORT QVTKQuickItem : public QQuickItem
+class MitkOpenViewCore_EXPORT QVTKQuickItem : public QQuickFramebufferObject
 {
   Q_OBJECT
 public:
@@ -38,42 +39,32 @@ public:
   // destructor
   ~QVTKQuickItem();
 
-  void itemChange(ItemChange change, const ItemChangeData &);
-
-  // Description:
-  // set the render window to use with this item
-  void SetRenderWindow(vtkGenericOpenGLRenderWindow* win);
+  Renderer *createRenderer() const;
 
   // Description:
   // get the render window used with this item
-  vtkGenericOpenGLRenderWindow* GetRenderWindow() const;
+  vtkOpenGLRenderWindow* GetRenderWindow() const;
 
   // Description:
   // get the render window interactor used with this item
   // this item enforces its own interactor
   QVTKInteractor* GetInteractor() const;
 
-public slots:
-  virtual void paint();
-
 protected slots:
-  // slot to make this vtk render window current
-  virtual void MakeCurrent();
-  // slot called when vtk render window starts to draw
-  virtual void Start();
-  // slot called when vtk render window is done drawing
-  virtual void End();
   // slot called when vtk wants to know if the context is current
   virtual void IsCurrent(vtkObject* caller, unsigned long vtk_event, void* client_data, void* call_data);
   // slot called when vtk wants to know if a window is direct
   virtual void IsDirect(vtkObject* caller, unsigned long vtk_event, void* client_data, void* call_data);
   // slot called when vtk wants to know if a window supports OpenGL
   virtual void SupportsOpenGL(vtkObject* caller, unsigned long vtk_event, void* client_data, void* call_data);
+  void onTextureFollowsItemSizeChanged(bool follows);
 
 protected:
-
+  // Called ONCE from the render thread before the FBO is first created and while the GUI thread is blocked
   virtual void init();
-  virtual void prepareForRender();
+  // Called from the render thread BEFORE each update while the GUI thread blocked
+  virtual bool prepareForRender();
+  // Called from the render thread AFTER each update while the GUI thread is NOT blocked
   virtual void cleanupAfterRender();
 
   // handle item key events
@@ -91,18 +82,15 @@ protected:
   virtual void hoverLeaveEvent(QHoverEvent* e);
   virtual void hoverMoveEvent(QHoverEvent* e);
 
-  virtual QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* updatePaintNodeData);
-
   QMutex m_viewLock;
 
 private:
-  QOpenGLContext* m_context;
-  vtkSmartPointer<vtkGenericOpenGLRenderWindow> m_win;
+  vtkOpenGLRenderWindow *m_win;
   vtkSmartPointer<QVTKInteractor> m_interactor;
   QVTKInteractorAdapter* m_interactorAdapter;
   vtkSmartPointer<vtkEventQtSlotConnect> m_connect;
 
-  bool m_InitCalledOnce;
+  friend class QVTKFramebufferObjectRenderer;
 };
 
 #endif

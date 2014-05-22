@@ -185,8 +185,7 @@ void QVTKQuickItem::IsDirect(vtkObject*, unsigned long, void*, void* call_data)
 void QVTKQuickItem::SupportsOpenGL(vtkObject*, unsigned long, void*, void* call_data)
 {
   int* ptr = reinterpret_cast<int*>(call_data);
-  *ptr = true;
-  //*ptr = QGLFormat::hasOpenGL();
+  *ptr = 1;
 }
 
 void QVTKQuickItem::geometryChanged(const QRectF & newGeometry, const QRectF & oldGeometry)

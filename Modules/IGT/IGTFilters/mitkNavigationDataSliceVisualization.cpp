@@ -129,51 +129,51 @@ void mitk::NavigationDataSliceVisualization::GenerateData()
       snc->SetViewDirection(mitk::SliceNavigationController::Frontal);
       snc->SelectSliceByPoint(slicePosition);
     }
-    else if (AxialOblique == m_ViewDirection)
+    else if (AxialOblique == m_ViewDirection || SagittalOblique == m_ViewDirection)
     {
+      const int slicingPlaneXAxis = AxialOblique == m_ViewDirection ? 0 : 2;
+
+      // The column 0 is the slicing plane's x-axis, column 1 is the slicing plane's y-axis
+      const mitk::Geometry2D::TransformType::MatrixType &m =
+            m_Renderer->GetCurrentWorldGeometry2D()->GetIndexToWorldTransform()->GetMatrix();
+
       // Rotate the tool trajectory vector into world coordinate frame (assuming
       // NavigationData has passed through a NavigationDataTransformFilter to
       // convert it into world coordinate frame)
-      Vector3D toolTrajectory;
-      toolTrajectory.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
+      Vector3D slicingPlaneYAxisVector;
+      slicingPlaneYAxisVector.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
 
       // Project the tool trajectory onto the sagittal plane. This defines the
       // y-axis ("up") of the axial oblique slicing plane
-      toolTrajectory[0] = 0.0;
+      slicingPlaneYAxisVector[slicingPlaneXAxis] = 0.0;
 
-      // Maintain the A-P orientation of the slice regardless of what
-      // direction the tool trajectory points along the A-P axis
-      if (toolTrajectory[1] > 0.0)
+      // Do nothing for ambigous/undefined case (the R-L component of the x-axis is zero or
+      // the A-P component of the y-axis is zero)
+      if ( m(slicingPlaneXAxis,0) == 0.0 ||
+           m(1,1) == 0.0 ||
+           (slicingPlaneXAxis != 0 && slicingPlaneYAxisVector[0] == 0.0) ||
+           (slicingPlaneXAxis != 1 && slicingPlaneYAxisVector[1] == 0.0) ||
+           (slicingPlaneXAxis != 2 && slicingPlaneYAxisVector[2] == 0.0) )
       {
-         toolTrajectory *= -1;
+        return;
+      }
+
+      // Maintain the A-P orientation of the slice's y-axis regardless of what
+      // direction the tool trajectory points
+      /// @todo<C++11> Use std::signbit
+      if ( (m(1,1) > 0) != (slicingPlaneYAxisVector[1] > 0) )
+      {
+        slicingPlaneYAxisVector *= -1;
       }
 
       Vector3D slicingPlaneXAxisVector;
-      FillVector3D(slicingPlaneXAxisVector, 1.0, 0.0, 0.0);
-      snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, toolTrajectory);
-    }
-    else if (SagittalOblique == m_ViewDirection)
-    {
-       // Rotate the tool trajectory vector into world coordinate frame (assuming
-       // NavigationData has passed through a NavigationDataTransformFilter to
-       // convert it into world coordinate frame)
-       Vector3D toolTrajectory;
-       toolTrajectory.SetVnlVector(orientation.rotate(m_ToolTrajectory.GetVnlVector()));
+      slicingPlaneXAxisVector.Fill(0.0);
+      // For AxialOblique: maintain the Left/Right direction of the slice's x-axis
+      // For SagittalOblique: maintain the Superior/Inferior direction of the slice's x-axis
+      /// @todo<C++11> Use std::copysign
+      slicingPlaneXAxisVector[slicingPlaneXAxis] = m(slicingPlaneXAxis,0) > 0 ? 1.0 : -1.0;
 
-       // Project the tool trajectory onto the axial plane. This defines the
-       // y-axis ("up") of the sagittal oblique slicing plane
-       toolTrajectory[2] = 0.0;
-
-       // Maintain the A-P orientation of the slice regardless of what
-       // direction the tool trajectory points along the A-P axis
-       if (toolTrajectory[1] > 0.0)
-       {
-          toolTrajectory *= -1;
-       }
-
-       Vector3D slicingPlaneXAxisVector;
-       FillVector3D(slicingPlaneXAxisVector, 0.0, 0.0, 1.0);
-       snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, toolTrajectory);
+      snc->ReorientSlices(slicePosition, slicingPlaneXAxisVector, slicingPlaneYAxisVector);
     }
     else if (Oblique == m_ViewDirection)
     {

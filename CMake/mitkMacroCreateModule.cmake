@@ -276,6 +276,9 @@ macro(MITK_CREATE_MODULE MODULE_NAME_IN)
             # Some DICOM header file in ITK
             mitkFunctionCheckCAndCXXCompilerFlags("-Wno-error=cast-align" module_c_flags module_cxx_flags)
 
+            # Templated ITK code has several unused local typedefs, nothing to worry about
+            mitkFunctionCheckCAndCXXCompilerFlags("-Wno-error=unused-local-typedefs" module_c_flags module_cxx_flags)
+
           endif()
         endif(MODULE_WARNINGS_AS_ERRORS)
 

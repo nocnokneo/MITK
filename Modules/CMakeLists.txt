@@ -11,39 +11,39 @@ set(module_dirs
     IpPicSupport
     MitkExt
     SceneSerialization
-    GraphAlgorithms
-    ContourModel
-    SurfaceInterpolation
-    Segmentation
-    PlanarFigureSegmentation
+#    GraphAlgorithms
+#    ContourModel
+#    SurfaceInterpolation
+#    Segmentation
+#    PlanarFigureSegmentation
     OpenViewCore
     QmlMitk
-    Qmitk
-    QmitkExt
-    SegmentationUI
-    DiffusionImaging
-    GPGPU
+#    Qmitk
+#    QmitkExt
+#    SegmentationUI
+#    DiffusionImaging
+#    GPGPU
     IGT
-    CameraCalibration
-    IGTUI
-    RigidRegistration
-    RigidRegistrationUI
-    DeformableRegistration
-    DeformableRegistrationUI
-    OpenCL
-    OpenCVVideoSupport
-    Overlays
-    InputDevices
-    ToFHardware
-    ToFProcessing
-    ToFUI
-    US
-    ClippingTools
-    USUI
-    DicomUI
-    Simulation
-    Remeshing
-    Python
+#    CameraCalibration
+#    IGTUI
+#    RigidRegistration
+#    RigidRegistrationUI
+#    DeformableRegistration
+#    DeformableRegistrationUI
+#    OpenCL
+#    OpenCVVideoSupport
+#    Overlays
+#    InputDevices
+#    ToFHardware
+#    ToFProcessing
+#    ToFUI
+#    US
+#    ClippingTools
+#    USUI
+#    DicomUI
+#    Simulation
+#    Remeshing
+#    Python
 )
 
 set(MITK_DEFAULT_SUBPROJECTS MITK-Modules)

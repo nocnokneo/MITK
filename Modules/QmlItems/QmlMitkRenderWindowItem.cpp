@@ -361,13 +361,14 @@ void QmlMitkRenderWindowItem::wheelEvent(QWheelEvent *we)
 
 bool QmlMitkRenderWindowItem::prepareForRender()
 {
-//  Adjust camera is kaputt wenn nicht der renderingmanager dem vtkprop bescheid sagt!
-//  this is just a workaround
-
    //  If not able to get the render lock within a timeout (20 millsec), then give up and return false.
   if (QmlMitkBigRenderLock::GetMutex().tryLock(20))
   {
-     mitk::RenderWindowBase::GetRenderer()->ForceImmediateUpdate();
+    mitk::VtkPropRenderer *vPR = dynamic_cast<mitk::VtkPropRenderer*>(mitk::BaseRenderer::GetInstance( this->GetRenderWindow() ));
+    if(vPR)
+    {
+      vPR->PrepareRender();
+    }
   }
   else
   {

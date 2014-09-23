@@ -59,7 +59,8 @@
 #include "mitkPlaneGeometryDataMapper2D.h"
 
 #include "QmlFboGeometry.h"
-#include "QmlMitkBigRenderLock.h"
+#include <QEvent>
+#include <limits>
 
 #define INTERACTION_LEGACY // TODO: remove INTERACTION_LEGACY!
 
@@ -67,6 +68,26 @@
   #include "InteractionLegacy/QmitkEventAdapter.h"
   #include "mitkGlobalInteraction.h"
 #endif
+
+
+QMutex QmlMitkRenderWindowItem::s_MitkRendererDataLock(QMutex::Recursive);
+
+class QVTKQuickItemStartedRenderingEvent : public QEvent
+{
+public:
+  static QEvent::Type QVTKQuickItemStartedRendering;
+  QVTKQuickItemStartedRenderingEvent() : QEvent( QVTKQuickItemStartedRendering ) {}
+};
+QEvent::Type QVTKQuickItemStartedRenderingEvent::QVTKQuickItemStartedRendering = static_cast<QEvent::Type>(QEvent::registerEventType());
+
+class QVTKQuickItemFinishedRenderingEvent : public QEvent
+{
+public:
+  static QEvent::Type QVTKQuickItemFinishedRendering;
+  QVTKQuickItemFinishedRenderingEvent() : QEvent( QVTKQuickItemFinishedRendering ) {}
+};
+QEvent::Type QVTKQuickItemFinishedRenderingEvent::QVTKQuickItemFinishedRendering = static_cast<QEvent::Type>(QEvent::registerEventType());
+
 
 QmlMitkRenderWindowItem* QmlMitkRenderWindowItem::GetInstanceForVTKRenderWindow( vtkRenderWindow* rw )
 {
@@ -362,25 +383,33 @@ void QmlMitkRenderWindowItem::wheelEvent(QWheelEvent *we)
 bool QmlMitkRenderWindowItem::prepareForRender()
 {
    //  If not able to get the render lock within a timeout (20 millsec), then give up and return false.
-  if (QmlMitkBigRenderLock::GetMutex().tryLock(20))
+  if (!s_MitkRendererDataLock.tryLock())
   {
-    mitk::VtkPropRenderer *vPR = dynamic_cast<mitk::VtkPropRenderer*>(mitk::BaseRenderer::GetInstance( this->GetRenderWindow() ));
-    if(vPR)
-    {
-      vPR->PrepareRender();
-    }
-  }
-  else
-  {
-    MITK_WARN << "Timed out trying to obtain the Qml BigRenderLock";
+    // The GUI loop has not had enough time to process events delayed during
+    // the previous render update so we return false to indicate that we are
+    // not ready to render
+    MITK_WARN << "Skipping render update to prevent GUI loop starvation";
     return false;
+  }
+  QCoreApplication::postEvent(this, new QVTKQuickItemStartedRenderingEvent, INT_MAX);
+  mitk::VtkPropRenderer *vPR = dynamic_cast<mitk::VtkPropRenderer*>(mitk::BaseRenderer::GetInstance( this->GetRenderWindow() ));
+  if(vPR)
+  {
+    vPR->PrepareRender();
   }
   return true;
 }
 
 void QmlMitkRenderWindowItem::cleanupAfterRender()
 {
-  QmlMitkBigRenderLock::GetMutex().unlock();
+  // QVTKQuickItemFinishedRenderingEvent to itself with the default
+  // priority. Since all instances of QmlMitkRenderWindowItem live in the GUI
+  // thread, this event will get added to the GUI event queue and will be
+  // processed after all events already in the GUI event queue except for any
+  // that were posted with lower than the default priority
+  // (e.g. Qt::LowPriorityEvent).
+  QCoreApplication::postEvent(this, new QVTKQuickItemFinishedRenderingEvent);
+  s_MitkRendererDataLock.unlock();
 }
 
 void QmlMitkRenderWindowItem::SetCrossHairPositioningOnClick(bool enabled)
@@ -417,4 +446,30 @@ vtkRenderWindowInteractor* QmlMitkRenderWindowItem::GetVtkRenderWindowInteractor
   return QVTKQuickItem::GetInteractor();
 }
 
+bool QmlMitkRenderWindowItem::event(QEvent *e)
+{
+  if (e->type() == QVTKQuickItemStartedRenderingEvent::QVTKQuickItemStartedRendering)
+  {
+    // Rendering started - block GUI loop until ...
+    s_MitkRendererDataLock.lock();
+    return true;
+  }
+  else if (e->type() == QVTKQuickItemFinishedRenderingEvent::QVTKQuickItemFinishedRendering)
+  {
+    // ... rendering is finished
+    s_MitkRendererDataLock.unlock();
+    return true;
+  }
+  else
+  {
+    // Workaround for occasional Event that "slip through" during the brief
+    // window of time between when the QSG synchronize phase unblocks the GUI
+    // thread and when the QVTKQuickItemStartedRendering event is processed
+    // and blocks the GUI thread again.
+    /// @todo Exactly how/where does the QSG block the GUI thread??
+    s_MitkRendererDataLock.lock();
+    s_MitkRendererDataLock.unlock();
 
+    return QVTKQuickItem::event(e);
+  }
+}

@@ -3,7 +3,6 @@ set(CPP_FILES
   QmlMitkRenderingManager.cpp
   QmlMitkRenderingManagerFactory.cpp
   InteractionLegacy/QmitkEventAdapter.cpp
-  QmlMitkBigRenderLock.cpp
   QmlMitkFourRenderWindowWidget.cpp
 )
 
@@ -14,7 +13,6 @@ set(H_FILES
 set(MOC_H_FILES
   QmlMitkRenderWindowItem.h
   QmlMitkRenderingManager.h
-  QmlMitkBigRenderLock.h
   QmlMitkFourRenderWindowWidget.h
 )
 

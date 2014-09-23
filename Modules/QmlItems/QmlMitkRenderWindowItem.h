@@ -6,6 +6,7 @@
 #include "mitkRenderWindowBase.h"
 
 #include <QTimer>
+#include <QMutex>
 
 #include "MitkQmlItemsExports.h"
 
@@ -41,6 +42,9 @@ public:
 
     void SetCrossHairPositioningOnClick(bool enabled);
 
+    // QObject interface
+    virtual bool event(QEvent *);
+
 signals:
 
 public slots:
@@ -70,7 +74,7 @@ protected:
 
   mitk::DataNode::Pointer m_PlaneNodeParent;
   
-  
+  static QMutex s_MitkRendererDataLock;
 };
 
 #endif

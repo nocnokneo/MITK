@@ -24,8 +24,6 @@ See LICENSE.txt or http://www.mitk.org for details.
 #include "mitkGlobalInteraction.h"
 #include "mitkImage.h"
 
-#include "QmlMitkBigRenderLock.h"
-
 mitk::DataStorage::Pointer FillDataStorage(int argc, char **argv)
 {
   if (argc < 2)
@@ -123,7 +121,5 @@ int main(int argc, char **argv)
 
     view.show();
 
-    QmlMitkBigRenderLock giantRenderLock;
-    app.installEventFilter(&giantRenderLock);
     return app.exec();
 }
